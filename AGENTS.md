@@ -26,4 +26,4 @@
 - when you complete a task from `@TASKS.md`, mark it there as complete.
 
 ## Important reading 
-- Read `@SPEC.md`, and `@ROADMAP.md`. Implement **Phase number** of the roadmap, following PLAN.md as guide. Check `@TASKS.md` for the current sub-tasks to execute.
+- Read `@SPEC.md`, and `@ROADMAP.md`. Implement **Phase number** of the roadmap. Check `@TASKS.md` for the current sub-tasks to execute.
