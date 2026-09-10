@@ -18,7 +18,7 @@
 
 ## Phase 5: Has Preferred PDF settings
 - **Goal:** : To open in Single Page View, Fit to Page Magnification, allow to turn pages with arrow keys or mouse wheel
-- **Exit Criteria:** 
+- **Exit Criteria:** User able to turn pages.
 
 ## Phase 6: Dialog to Pick pdf file
 - **Goal:** : create basic dialog to search for a pdf on the computer. 

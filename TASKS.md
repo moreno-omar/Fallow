@@ -1,6 +1,7 @@
-# TASKS.md - Phase 4: Save Session
+# TASKS.md - Phase 5: Preferred PDF Settings
 
-- [x] store open files into JSON
-- [x] store json at the XDG Base Directory specification at `$XDG_CONFIG_HOME/linux-pdf-reader/session.json` (falling back to `~/.config/linux-pdf-reader/session.json`).
-- [x] have app open files based on what's saved on that JSON
-- [x] in Summary, make any notes of changes made, how they were implemented, and what can be done to be improved.
+- [x] Open PDF in Single Page View
+- [x] Open PDF in "Fit to Page" Magnification
+- [x] Implement turning pages with arrow keys using QShortcut
+- [x] Implement turning pages with mouse wheel using WheelEvent.
+- [x] Explain what was added, why, and provide options to improve.
