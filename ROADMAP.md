@@ -24,6 +24,10 @@
 - **Goal:** : create basic dialog to search for a pdf on the computer. 
 - **Exit Criteria:**  User able to open a new tab with a pdf picked from the dialog. Hardcoded code neede to open pdf not needed in main.
 
+## Phase 
+- **Goal:**
+- **Exit Criteria:** 
+
 ## Phase 6: Dark Mode
 - **Goal:**
 - **Exit Criteria:** 

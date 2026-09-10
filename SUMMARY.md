@@ -45,3 +45,13 @@ Completed 2026-09-10.
 - Added `QShortcut` bindings for Right/Down/Page Down and Left/Up/Page Up, with boundary checks so navigation changes by one page only.
 - Added wheel-event routing from the scroll area and viewport. Wheel angle deltas are accumulated into 120-unit detents, and each detent moves exactly one page.
 - These controls belong to `PDFViewerWidget`, so every tab keeps independent page state. Possible improvements include a visible page counter, configurable key bindings, and handling high-resolution pixel-delta wheel devices separately.
+
+## Phase 6: Dialog to Pick PDF File
+
+Completed 2026-09-10.
+
+- created menuBar by using the built-in one from QMainWindow
+- Added `File`, `View`, and `Help` menus through `QMainWindow.menuBar()`.
+- Added `File > Open` with a `Ctrl+O` shortcut. It opens a `QFileDialog` filtered for PDF files, creates a new viewer tab for the selected file, selects that tab, and saves the updated session.
+- The existing `add_pdf()` method remains the single tab-creation path, so files opened from the dialog receive the same rendering, navigation, and session behavior as restored documents.
+- Possible improvements include adding menu actions for close and quit, disabling unsupported file selections with a visible error, and populating the currently empty `View` and `Help` menus.
