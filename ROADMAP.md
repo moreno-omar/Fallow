@@ -29,5 +29,9 @@
 - **Exit Criteria:** User able to view current page number, total number of pages, and able to type what page to navigate to.
 
 ## Phase 8: Dark Mode
-- **Goal:**
-- **Exit Criteria:** 
+- **Goal:** To enable option to toggle on. To have a dark mode pallete that still renders colored code snippets properly.
+- process the pixmap buffer using an HSL/HSV luminance transformation
+- Color Palette Nord / Slate Dark
+    - Background: Deep gray-blue (#2E3440 or #1E1E2E)
+    - Default Text: Off-white / Ice (#ECEFF4)
+- **Exit Criteria:** User can open pdf with color code snippets, shows up properly.

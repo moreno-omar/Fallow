@@ -14,11 +14,12 @@ class PDFViewerWidget(QWidget):
 
     page_changed = Signal(int, int)
 
-    def __init__(self, file_path: Path) -> None:
+    def __init__(self, file_path: Path, dark_mode: bool = False) -> None:
         super().__init__()
         self.engine = RenderEngine(file_path)
         self._disposed = False
         self.current_page = 0
+        self.dark_mode = dark_mode
         self._wheel_delta = 0
         self.page_label = QLabel(alignment=Qt.AlignmentFlag.AlignCenter)
         self.page_label.setText("Rendering page...")
@@ -51,9 +52,15 @@ class PDFViewerWidget(QWidget):
     def render_current_page(self) -> None:
         """Render the active page at the current viewport size."""
         viewport_size = self.scroll_area.viewport().size()
-        image = self.engine.render_page(self.current_page, viewport_size)
+        image = self.engine.render_page(self.current_page, viewport_size, self.dark_mode)
         self.page_label.setPixmap(QPixmap.fromImage(image))
         self.page_label.adjustSize()
+
+    def set_dark_mode(self, enabled: bool) -> None:
+        """Change page rendering theme and refresh the active page."""
+        self.dark_mode = enabled
+        if self.isVisible() and not self._disposed:
+            self.render_current_page()
 
     def set_page(self, page_number: int) -> None:
         """Show a zero-based page number after clamping it to the document."""

@@ -28,6 +28,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Fallow PDF Reader")
         self.session_manager = SessionManager()
+        session = self.session_manager.load()
+        self.dark_mode = session["dark_mode"] if session else True
         repository_root = Path(__file__).resolve().parents[1]
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
@@ -37,7 +39,6 @@ class MainWindow(QMainWindow):
         self.create_menu_bar()
         self.create_bottom_bar()
 
-        session = self.session_manager.load()
         if session and session["tabs"]:
             for tab in session["tabs"]:
                 self.add_pdf(Path(tab["file_path"]), self.tab_title(Path(tab["file_path"])), tab["current_page"])
@@ -46,6 +47,8 @@ class MainWindow(QMainWindow):
             self.add_pdf(repository_root / "alices-adventures-in-wonderland.pdf", "Alice")
             self.add_pdf(repository_root / "frankenstein.pdf", "Frankenstein")
         self.update_tab_bar_visibility()
+        self.dark_mode_action.setChecked(self.dark_mode)
+        self.apply_theme()
         self.showMaximized()
 
     def create_bottom_bar(self) -> None:
@@ -104,8 +107,35 @@ class MainWindow(QMainWindow):
         """Create the application menus and connect the PDF open action."""
         file_menu = self.menuBar().addMenu("File")
         file_menu.addAction(self.create_open_action())
-        self.menuBar().addMenu("View")
+        view_menu = self.menuBar().addMenu("View")
+        self.dark_mode_action = QAction("Dark Mode", self)
+        self.dark_mode_action.setCheckable(True)
+        self.dark_mode_action.toggled.connect(self.set_dark_mode)
+        view_menu.addAction(self.dark_mode_action)
         self.menuBar().addMenu("Help")
+
+    def set_dark_mode(self, enabled: bool) -> None:
+        """Apply the selected UI and PDF canvas theme."""
+        self.dark_mode = enabled
+        self.apply_theme()
+        for index in range(self.tabs.count()):
+            viewer = self.tabs.widget(index)
+            if isinstance(viewer, PDFViewerWidget):
+                viewer.set_dark_mode(enabled)
+        self.save_session()
+
+    def apply_theme(self) -> None:
+        """Apply neutral dark or default widget styling."""
+        if self.dark_mode:
+            self.setStyleSheet(
+                "QMainWindow, QTabWidget, QTabBar, QToolBar { background: #2E3440; color: #ECEFF4; }"
+                "QScrollArea, QScrollArea > QWidget > QWidget { background: #2E3440; }"
+                "QLabel, QLineEdit, QMenuBar, QMenu { color: #ECEFF4; }"
+                "QMenuBar::item:selected, QMenu::item:selected { background: #4C566A; }"
+                "QLineEdit { background: #3B4252; border: 1px solid #81A1C1; }"
+            )
+        else:
+            self.setStyleSheet("")
 
     def create_open_action(self) -> QAction:
         """Create the action that opens a PDF file picker."""
@@ -135,7 +165,7 @@ class MainWindow(QMainWindow):
 
     def add_pdf(self, file_path: Path, title: str, current_page: int = 0) -> None:
         """Add a PDF viewer as a new document tab."""
-        viewer = PDFViewerWidget(file_path)
+        viewer = PDFViewerWidget(file_path, self.dark_mode)
         viewer.current_page = min(current_page, viewer.engine.page_count - 1)
         self.connect_viewer(viewer)
         self.tabs.addTab(viewer, title)
@@ -164,7 +194,7 @@ class MainWindow(QMainWindow):
     def save_session(self) -> None:
         """Save the current tabs and active document position."""
         viewers = [self.tabs.widget(index) for index in range(self.tabs.count())]
-        self.session_manager.save(self.tabs.currentIndex(), viewers)
+        self.session_manager.save(self.tabs.currentIndex(), viewers, self.dark_mode)
 
     def closeEvent(self, event) -> None:
         self.save_session()
