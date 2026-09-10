@@ -14,15 +14,15 @@
 
 ## Phase 4: Save Session
 - **Goal:** Saves into JSON the list of open files and the page they were last at
-- **Exit Criteria:** After opening those 2 files, user can close the app, 
+- **Exit Criteria:** After opening those 2 files, user can close the app, reopen it, and have the same files be opened.
 
 ## Phase 5: Has Preferred PDF settings
 - **Goal:** : To open in Single Page View, Fit to Page Magnification, allow to turn pages with arrow keys or mouse wheel
 - **Exit Criteria:** 
 
 ## Phase 6: Dialog to Pick pdf file
-- **Goal:** :
-- **Exit Criteria:** 
+- **Goal:** : create basic dialog to search for a pdf on the computer. 
+- **Exit Criteria:**  User able to open a new tab with a pdf picked from the dialog. Hardcoded code neede to open pdf not needed in main.
 
 ## Phase 6: Dark Mode
 - **Goal:**
