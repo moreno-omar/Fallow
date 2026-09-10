@@ -1,5 +1,5 @@
-# TASKS.md - Phase 2: Render PDF in PySide6 Window
+# TASKS.md - Phase 3: Open Multiple PDF in Tabs
 
-- [x] open alices-adventures-in-wonderland.pdf using pymupdf
-- [x] use on-demand lazy rendering
-- [x] have pdf visible on pyside6 window.
+- [x] enable use of tabs on pyside6
+- [x] Start with tabs hidden when only one PDF is open, and show the tab bar once two or more files are active.
+- [x] have alice pdf open as first pdf, frankenstein as 2nd pdf.
