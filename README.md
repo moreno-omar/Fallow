@@ -29,9 +29,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python -m app.main
 ```
-```
 
 ## Future Roadmap
 - Support for EPUB and comic formats (CBZ/CBR).
 - Dual-page spread mode.
 - Configurable hotkeys.
+- Better UI

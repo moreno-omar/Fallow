@@ -106,7 +106,7 @@ A lightweight, open-source Linux desktop document viewer written in Python. The 
 - **Document Editing:** No support for text edits, annotations, form entry, digital signatures, or page reordering.
 - **Cross-Platform Targeting:** No official builds, packaging, or compatibility workarounds for Microsoft Windows or Apple macOS.
 - **DRM & Monetization:** No licensing checks, locked features, account requirements, or paid subscription tiers.
-- **Continuous Scrolling:** Continuous multi-page vertical scrolling is intentionally excluded in favor of single-page pagination.
+
 
 ---
 
@@ -115,6 +115,7 @@ A lightweight, open-source Linux desktop document viewer written in Python. The 
 - Alternative view modes (dual-page side-by-side spread, continuous vertical ribbon).
 - Configurable shortcut bindings via JSON configuration.
 - Thumbnail sidebar navigation panel.
+- Continuous multi-page vertical scrolling is intentionally excluded in favor of single-page pagination.
 
 ---
 
