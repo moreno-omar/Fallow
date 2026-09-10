@@ -1,5 +1,5 @@
-# TASKS.md - Create Window (Phase 1)
+# TASKS.md - Phase 2: Render PDF in PySide6 Window
 
-- [x] Pyside6 should be installed
-- [x] create a pyside6 widget that is fullscreen.
-- [x] now have window be maximized instead of fullscreen.
+- [x] open alices-adventures-in-wonderland.pdf using pymupdf
+- [x] use on-demand lazy rendering
+- [x] have pdf visible on pyside6 window.

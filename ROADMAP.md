@@ -1,6 +1,6 @@
 # ROADMAP.md - Project Implementation Phases
 
-## Phase : Create Window
+## Phase 1: Create Window
 - **Goal:** Pyside should be installed. Application should display visible window.
 - **Exit Criteria:** User confirms it's visible
 

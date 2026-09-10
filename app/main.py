@@ -1,8 +1,11 @@
 """Application entrypoint for the Fallow PDF reader."""
 
 import sys
+from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QMainWindow
+
+from app.ui.viewer_tab import PDFViewerWidget
 
 
 class MainWindow(QMainWindow):
@@ -11,6 +14,9 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Fallow PDF Reader")
+        pdf_path = Path(__file__).resolve().parents[1] / "alices-adventures-in-wonderland.pdf"
+        self.viewer = PDFViewerWidget(pdf_path)
+        self.setCentralWidget(self.viewer)
         self.showMaximized()
 
 
