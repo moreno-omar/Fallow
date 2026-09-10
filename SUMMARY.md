@@ -6,6 +6,14 @@ Completed 2026-09-10.
 - Added `app/main.py` with a minimal `QMainWindow` entrypoint.
 - The window opens maximized and can be launched with `python -m app.main`.
 
+## Phase 3: Open Multiple PDF in Tabs
+
+Completed 2026-09-10.
+
+- Added a native `QTabWidget` containing Alice and Frankenstein at startup.
+- The tab bar is hidden for one open document and shown for two or more.
+- Individual tabs can be closed without terminating the application.
+
 ## Phase 2: Render PDF in PySide6 Window
 
 Completed 2026-09-10.

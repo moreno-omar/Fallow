@@ -10,7 +10,7 @@
 
 ## Phase 3: Open Multiple PDF in Tabs
 - **Goal:** More than 1 pdf can be opened on the same window
-- **Exit Criteria:** 
+- **Exit Criteria:** User can view 2 pdfs open on the same window, each on their own tab.
 
 ## Phase 4: Save Session
 - **Goal:** Saves into JSON the list of open files and the page they were last at

@@ -15,6 +15,7 @@ class PDFViewerWidget(QWidget):
     def __init__(self, file_path: Path) -> None:
         super().__init__()
         self.engine = RenderEngine(file_path)
+        self._disposed = False
         self.current_page = 0
         self.page_label = QLabel(alignment=Qt.AlignmentFlag.AlignCenter)
         self.page_label.setText("Rendering page...")
@@ -44,6 +45,12 @@ class PDFViewerWidget(QWidget):
         if self.isVisible():
             self.render_current_page()
 
+    def dispose(self) -> None:
+        """Release the PDF document when this viewer is removed from a tab."""
+        if not self._disposed:
+            self.engine.close()
+            self._disposed = True
+
     def closeEvent(self, event) -> None:
-        self.engine.close()
+        self.dispose()
         super().closeEvent(event)
