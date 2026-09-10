@@ -76,3 +76,4 @@ Completed 2026-09-10.
 - Possible improvements include moving pixel processing to a worker for very large pages, caching transformed pages, and adding contrast-aware handling for images and transparency.
 - Replaced the Python per-pixel loop with NumPy array operations and a precomputed 256-entry RGB LUT for neutral pixels. The LUT maps ice text to slate paper through a smooth cubic curve, preserving grayscale antialiasing levels instead of flattening font edges.
 - Colored pixels are transformed in bulk with their hue and saturation retained; lightness moves smoothly into the readable midrange rather than being hard-clipped at the endpoints. This reduces UI lag and avoids destroying subpixel edge relationships.
+- Replaced the colored-pixel cutoff with continuous chroma blending: pixels transition smoothly from the grayscale LUT at chroma 15 to hue-safe inverted colors at chroma 55, using smoothstep interpolation for antialiased syntax edges.

@@ -55,35 +55,30 @@ class RenderEngine:
 
     @staticmethod
     def transform_for_dark_mode(image: QImage) -> QImage:
-        """Transform page pixels in bulk without mutating Qt-owned memory."""
+        """Transform page pixels with continuous colored-edge blending."""
         source = image.convertToFormat(QImage.Format.Format_RGB888)
         height, width = source.height(), source.width()
         byte_count = source.bytesPerLine() * height
         buffer = np.frombuffer(source.constBits(), dtype=np.uint8, count=byte_count)
         rows = buffer.reshape(height, source.bytesPerLine())[:, : width * 3]
         rgb = rows.reshape(height, width, 3).copy()
-        maximum = np.max(rgb, axis=2)
-        minimum = np.min(rgb, axis=2)
-        chroma = maximum.astype(np.int16) - minimum.astype(np.int16)
-        neutral = chroma < 30
+        maximum = np.max(rgb, axis=2).astype(np.float32)
+        minimum = np.min(rgb, axis=2).astype(np.float32)
+        chroma = maximum - minimum
 
         luminance = np.rint(rgb.mean(axis=2)).astype(np.uint8)
-        grayscale = RenderEngine._dark_gray_lut[luminance]
-        result = np.where(neutral[..., None], grayscale, rgb)
+        grayscale = RenderEngine._dark_gray_lut[luminance].astype(np.float32)
 
-        # Keep colored tokens recognizable while lifting only dark colors.
-        colored = ~neutral
-        if np.any(colored):
-            colored_pixels = result[colored].astype(np.float32)
-            colored_min = colored_pixels.min(axis=1)
-            colored_max = colored_pixels.max(axis=1)
-            dark = colored_max < 190.0
-            lift = np.ones_like(colored_max)
-            lift[dark] = 190.0 / np.maximum(colored_max[dark], 1.0)
-            colored_pixels = np.clip(colored_pixels * lift[:, None], 0.0, 255.0)
-            result[colored] = colored_pixels.astype(np.uint8)
+        # Blend through the antialiased edge instead of cutting at one chroma.
+        chroma_weight = np.clip((chroma - 15.0) / 40.0, 0.0, 1.0)
+        chroma_weight = chroma_weight * chroma_weight * (3.0 - 2.0 * chroma_weight)
+        lifted_colors = 255.0 - rgb.astype(np.float32)
+        result = (
+            (1.0 - chroma_weight[..., None]) * grayscale
+            + chroma_weight[..., None] * lifted_colors
+        )
 
-        output = np.ascontiguousarray(result, dtype=np.uint8)
+        output = np.ascontiguousarray(np.clip(result, 0.0, 255.0), dtype=np.uint8)
         return QImage(output.data, width, height, width * 3, QImage.Format.Format_RGB888).copy()
 
     def close(self) -> None:

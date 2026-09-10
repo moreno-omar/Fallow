@@ -12,3 +12,4 @@
 - [x] Explain changes, how it was implmented, and suggest improvements.
 - [x] Vectorize with a Precomputed 256-Value LUT (Look-Up Table)
 - [x] Preserve Color Saturation Smoothly Without Edge Clipping
+- [x] fix colored code in dark mode
