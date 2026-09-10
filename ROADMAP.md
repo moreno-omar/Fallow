@@ -24,10 +24,10 @@
 - **Goal:** : create basic dialog to search for a pdf on the computer. 
 - **Exit Criteria:**  User able to open a new tab with a pdf picked from the dialog. Hardcoded code neede to open pdf not needed in main.
 
-## Phase 
-- **Goal:**
-- **Exit Criteria:** 
+## Phase 7: Add useful bottom bar 
+- **Goal:** : In center, provide field to type in page number, to the right of that, display current page and total pages. Example: "83 of 680". Use QToolBar.
+- **Exit Criteria:** User able to view current page number, total number of pages, and able to type what page to navigate to.
 
-## Phase 6: Dark Mode
+## Phase 8: Dark Mode
 - **Goal:**
 - **Exit Criteria:** 

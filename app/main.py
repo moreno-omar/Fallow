@@ -3,8 +3,19 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QTabWidget
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QIntValidator
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QSizePolicy,
+    QTabWidget,
+    QToolBar,
+    QWidget,
+)
 
 from app.core.session import SessionManager
 from app.ui.viewer_tab import PDFViewerWidget
@@ -21,8 +32,10 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
+        self.tabs.currentChanged.connect(self.update_page_controls)
         self.setCentralWidget(self.tabs)
         self.create_menu_bar()
+        self.create_bottom_bar()
 
         session = self.session_manager.load()
         if session and session["tabs"]:
@@ -34,6 +47,58 @@ class MainWindow(QMainWindow):
             self.add_pdf(repository_root / "frankenstein.pdf", "Frankenstein")
         self.update_tab_bar_visibility()
         self.showMaximized()
+
+    def create_bottom_bar(self) -> None:
+        """Create centered page navigation controls in a bottom toolbar."""
+        self.bottom_bar = QToolBar("Page Navigation", self)
+        self.bottom_bar.setMovable(False)
+        self.addToolBar(Qt.ToolBarArea.BottomToolBarArea, self.bottom_bar)
+
+        left_spacer = QWidget()
+        left_spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        right_spacer = QWidget()
+        right_spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+        self.page_input = QLineEdit()
+        self.page_input.setPlaceholderText("Page")
+        self.page_input.setMaximumWidth(90)
+        self.page_input.setValidator(QIntValidator(1, 1, self.page_input))
+        self.page_input.returnPressed.connect(self.go_to_page)
+
+        self.page_status = QLabel()
+        self.bottom_bar.addWidget(left_spacer)
+        self.bottom_bar.addWidget(self.page_input)
+        self.bottom_bar.addWidget(self.page_status)
+        self.bottom_bar.addWidget(right_spacer)
+
+    def connect_viewer(self, viewer: PDFViewerWidget) -> None:
+        """Connect one viewer's page state to the bottom-bar controls."""
+        viewer.page_changed.connect(self.update_page_status)
+
+    def update_page_controls(self, tab_index: int) -> None:
+        """Refresh page controls when the active document changes."""
+        if tab_index < 0:
+            self.page_input.clear()
+            self.page_status.clear()
+            return
+        viewer = self.tabs.widget(tab_index)
+        if isinstance(viewer, PDFViewerWidget):
+            self.update_page_status(viewer.current_page, viewer.engine.page_count)
+
+    def update_page_status(self, current_page: int, page_count: int) -> None:
+        """Display the active page as a one-based position and total."""
+        self.page_input.setText(str(current_page + 1))
+        self.page_status.setText(f"of {page_count}")
+        self.page_input.setValidator(QIntValidator(1, page_count, self.page_input))
+
+    def go_to_page(self) -> None:
+        """Navigate the active tab to the page entered by the user."""
+        viewer = self.tabs.currentWidget()
+        if not isinstance(viewer, PDFViewerWidget):
+            return
+        page_number = self.page_input.text().strip()
+        if page_number:
+            viewer.set_page(int(page_number) - 1)
 
     def create_menu_bar(self) -> None:
         """Create the application menus and connect the PDF open action."""
@@ -72,7 +137,10 @@ class MainWindow(QMainWindow):
         """Add a PDF viewer as a new document tab."""
         viewer = PDFViewerWidget(file_path)
         viewer.current_page = min(current_page, viewer.engine.page_count - 1)
+        self.connect_viewer(viewer)
         self.tabs.addTab(viewer, title)
+        if self.tabs.currentWidget() is viewer:
+            self.update_page_controls(self.tabs.currentIndex())
 
     @staticmethod
     def tab_title(file_path: Path) -> str:

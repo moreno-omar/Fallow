@@ -1,7 +1,5 @@
-# TASKS.md - Dialog to Pick pdf file
+# TASKS.md - Phase 7: Add useful bottom bar 
 
-- [x] create menuBar by using the built-in one from QMainWindow
-- [x] Items that should be available on menu: File, View, Help
-- [x] For file, add action "Open"
-- [x] create dialog to pick pdf to open with QFileDialog
-- [x] Dialog should be opened by picking the "Open" action.
+- [x] Create horizontal bottom bar using QToolBar
+- [x] In the Center, provide a field to type in page number.
+- [x] In the center, right of the page number field, display current page and total pages. Example: "83 of 680"

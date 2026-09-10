@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QKeySequence, QPixmap, QShortcut, QWheelEvent
 from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
@@ -11,6 +11,8 @@ from app.core.pdf_engine import RenderEngine
 
 class PDFViewerWidget(QWidget):
     """Display the current PDF page and render it when the viewport needs it."""
+
+    page_changed = Signal(int, int)
 
     def __init__(self, file_path: Path) -> None:
         super().__init__()
@@ -53,17 +55,25 @@ class PDFViewerWidget(QWidget):
         self.page_label.setPixmap(QPixmap.fromImage(image))
         self.page_label.adjustSize()
 
+    def set_page(self, page_number: int) -> None:
+        """Show a zero-based page number after clamping it to the document."""
+        target_page = min(max(page_number, 0), self.engine.page_count - 1)
+        if target_page == self.current_page:
+            self.page_changed.emit(self.current_page, self.engine.page_count)
+            return
+        self.current_page = target_page
+        self.render_current_page()
+        self.page_changed.emit(self.current_page, self.engine.page_count)
+
     def next_page(self) -> None:
         """Advance one page without exceeding the document boundary."""
         if self.current_page < self.engine.page_count - 1:
-            self.current_page += 1
-            self.render_current_page()
+            self.set_page(self.current_page + 1)
 
     def previous_page(self) -> None:
         """Move back one page without going below the first page."""
         if self.current_page > 0:
-            self.current_page -= 1
-            self.render_current_page()
+            self.set_page(self.current_page - 1)
 
     def eventFilter(self, watched, event) -> bool:
         """Route wheel input from the scroll area to discrete page navigation."""
