@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Crisp obsidian base gradient -->
+    <linearGradient id="obsidian-surface" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#262833" />
+      <stop offset="60%" stop-color="#181920" />
+      <stop offset="100%" stop-color="#101014" />
+    </linearGradient>
+
+    <!-- Chiseled stone edge specular highlight -->
+    <linearGradient id="obsidian-bevel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6B728E" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#1C1D24" stop-opacity="0.3" />
+    </linearGradient>
+
+    <!-- Rothko upper block gradient -->
+    <linearGradient id="rothko-indigo" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#343E63" />
+      <stop offset="75%" stop-color="#272F4D" />
+      <stop offset="100%" stop-color="#1F243B" />
+    </linearGradient>
+
+    <!-- Rothko lower block gradient -->
+    <linearGradient id="rothko-plum" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4E2B43" />
+      <stop offset="75%" stop-color="#3E2034" />
+      <stop offset="100%" stop-color="#281422" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base App Icon Tile: Obsidian Squircle -->
+  <rect x="16" y="16" width="224" height="224" rx="52" fill="url(#obsidian-surface)" stroke="url(#obsidian-bevel)" stroke-width="2" />
+
+  <!-- Chiseled inner rim for glassy depth -->
+  <rect x="22" y="22" width="212" height="212" rx="46" fill="none" stroke="#FFFFFF" stroke-opacity="0.04" stroke-width="1.5" />
+
+  <!-- Stylized Open Book Wings / Rothko Color Fields -->
+  <g id="rothko-book-fields">
+    <!-- Upper Color Field (Night Sky / Open Page Tops) -->
+    <rect x="46" y="52" width="164" height="66" rx="10" fill="url(#rothko-indigo)" />
+    <rect x="44" y="50" width="168" height="70" rx="12" fill="none" stroke="#48568A" stroke-opacity="0.35" stroke-width="2" />
+
+    <!-- Lower Color Field (Resting Plum / Lower Page Leaves) -->
+    <rect x="46" y="132" width="164" height="66" rx="10" fill="url(#rothko-plum)" />
+    <rect x="44" y="130" width="168" height="70" rx="12" fill="none" stroke="#6E3A5E" stroke-opacity="0.3" stroke-width="2" />
+
+    <!-- Book Spine Gutter / Horizon Division Line -->
+    <line x1="58" y1="125" x2="198" y2="125" stroke="#0F1014" stroke-width="4" stroke-linecap="round" />
+    <line x1="60" y1="125" x2="196" y2="125" stroke="#000000" stroke-width="1.5" stroke-linecap="round" opacity="0.8" />
+
+    <!-- Resting Eye / Open Page Arc on the TOP half of the horizon -->
+    <path d="M 100 125 C 114 111, 142 111, 156 125" fill="none" stroke="#E2E6F3" stroke-width="2.5" stroke-linecap="round" opacity="0.85" />
+  </g>
+</svg>
