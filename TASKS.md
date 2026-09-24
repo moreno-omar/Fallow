@@ -1,8 +1,8 @@
-# TASKS.md - Phase 9: Useful keyboard shortcuts:
+# TASKS.md - Phase 10: Create Command Palette:
 
-- [x] `Ctrl+Shift+D` and `Alt-D` as Dark mode toggle
-- [x] `Ctrl+F` for find
-- [x] `Ctrl+G` for go to page
-- [x] `Ctrl+W` for close tab
-- [x] `Ctrl+B` to bookmark page. Use `Document.make_bookmark()`. Only create scaffold for now.
-- [x]`Ctrl+Mouse wheel` to zoom in/out. Use `pymupdf.Matrix`
+- [x] Create Command Palette using PySide6 QDialog that activates with `Ctrl+P`
+- [x] Dialog disappears if `esc` is pressed
+- [x] all keyboard shortcuts (find, dark mode, bookmark, etc) can be found in dialog
+- [x] all keyboard shortcuts (find, dark mode, bookmark, etc) can be peformed once selected from dialog
+- [x] selection from dialog can be done with either mouse or arrow keys. Enter to select best match.
+- [x] Best match is highlighted.

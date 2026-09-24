@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QIntValidator, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
     QFileDialog,
     QLabel,
     QLineEdit,
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.session import SessionManager
+from app.ui.command_palette import Command, CommandPalette
 from app.ui.viewer_tab import PDFViewerWidget
 
 
@@ -228,6 +230,72 @@ class MainWindow(QMainWindow):
         """Close the window, which saves the session on the way out."""
         self.close()
 
+    def current_viewer(self) -> PDFViewerWidget | None:
+        """Return the active document viewer, or ``None`` when no document is open."""
+        viewer = self.tabs.currentWidget()
+        return viewer if isinstance(viewer, PDFViewerWidget) else None
+
+    def next_page(self) -> None:
+        """Advance the active document by one page."""
+        viewer = self.current_viewer()
+        if viewer is not None:
+            viewer.next_page()
+
+    def previous_page(self) -> None:
+        """Move the active document back by one page."""
+        viewer = self.current_viewer()
+        if viewer is not None:
+            viewer.previous_page()
+
+    def show_command_palette(self) -> None:
+        """Open the searchable command palette and run the command it returns.
+
+        The command runs only after ``exec()`` returns, so a handler that opens
+        its own dialog (for example ``Open``) is never nested inside the
+        palette's modal event loop.
+        """
+        palette = CommandPalette(self.collect_commands(), self.dark_mode, self)
+        if palette.exec() == QDialog.DialogCode.Accepted and palette.selected_command is not None:
+            palette.selected_command.handler()
+
+    def collect_commands(self) -> list[Command]:
+        """Build every palette entry from menu actions and viewer-level keys."""
+        commands = [self.action_command(action) for action in self.menu_actions()]
+        commands.extend(self.viewer_commands())
+        return commands
+
+    def menu_actions(self) -> list[QAction]:
+        """Return the actionable menu entries, excluding the palette itself."""
+        actions: list[QAction] = []
+        for menu_action in self.menuBar().actions():
+            menu = menu_action.menu()
+            if menu is None:
+                continue
+            for action in menu.actions():
+                if action.isSeparator() or action is self.palette_action:
+                    continue
+                actions.append(action)
+        return actions
+
+    @staticmethod
+    def action_command(action: QAction) -> Command:
+        """Convert a shortcut action into a palette command."""
+        labels = [sequence.toString(QKeySequence.SequenceFormat.NativeText) for sequence in action.shortcuts()]
+        shortcut = ", ".join(label for label in labels if label)
+        return Command(action.text().replace("&", ""), shortcut, action.trigger)
+
+    def viewer_commands(self) -> list[Command]:
+        """Return commands for the keys the active viewer handles itself.
+
+        Page turning lives in ``PDFViewerWidget`` as per-widget ``QShortcut``s,
+        so these entries are not visible in the menu bar and must be added here
+        for the palette to advertise them.
+        """
+        return [
+            Command("Next Page", "Right / Down / Page Down", self.next_page),
+            Command("Previous Page", "Left / Up / Page Up", self.previous_page),
+        ]
+
     def create_action(self, title: str, shortcut: str, handler) -> QAction:
         """Create a window action with an optional single shortcut."""
         action = QAction(title, self)
@@ -250,6 +318,9 @@ class MainWindow(QMainWindow):
         edit_menu.addAction(self.create_action("Bookmark Page", "Ctrl+B", self.toggle_bookmark))
 
         view_menu = self.menuBar().addMenu("View")
+        self.palette_action = self.create_action("Command Palette", "Ctrl+P", self.show_command_palette)
+        view_menu.addAction(self.palette_action)
+        view_menu.addSeparator()
         self.dark_mode_action = QAction("Dark Mode", self)
         self.dark_mode_action.setCheckable(True)
         self.dark_mode_action.setShortcuts([QKeySequence(key) for key in self.DARK_MODE_SHORTCUTS])

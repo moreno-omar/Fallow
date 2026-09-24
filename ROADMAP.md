@@ -52,7 +52,8 @@
     - create command palette in PySide6 as a QDialog
     - create shortcut for it using `Ctrl-P`
     - all keyboard shortcuts achievable with command palette
-- **Exit Criteria** : all keyboard shoctus can be performed with command palette
+    - remove with `esc`
+- **Exit Criteria** : all keyboard shoctus can be performed with command palette. Visible when called with shortcut. Disappears when `esc` is pressed
 
 ## Phase 11: Tabs
 - **Goal** - limit to 20 characters. create overflow list. Only allow first 5 to be visible.
