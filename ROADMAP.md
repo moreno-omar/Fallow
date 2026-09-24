@@ -35,3 +35,41 @@
     - Background: Deep gray-blue (#2E3440 or #1E1E2E)
     - Default Text: Off-white / Ice (#ECEFF4)
 - **Exit Criteria:** User can open pdf with color code snippets, shows up properly.
+
+## Phase 9: Useful keyboard shortcuts:
+- **Goal** : Using establish the following shortcuts
+    - `Ctrl+Shift+D` and `Alt-D` as Dark mode toggle
+    - `Ctrl+F` for find
+    - `Ctrl+G` for go to page
+    - `Ctrl+W` for close tab
+    - `Ctrl+B` to bookmark page. Use `Document.make_bookmark()`. Only create scaffold for now.
+    - `Ctrl+Mouse wheel` to zoom in/out. Use `pymupdf.Matrix`
+
+- **Exit Criteria** : User confirms all shortcuts can be used.
+
+## Phase 10: Create Command Palette
+- **Goal** : Using pyside to catch keyboard shortcut, to activate needed functions (like PyMupdf), to have shortcuts and functions achieved by search
+    - create command palette in PySide6 as a QDialog
+    - create shortcut for it using `Ctrl-P`
+    - all keyboard shortcuts achievable with command palette
+- **Exit Criteria** : all keyboard shoctus can be performed with command palette
+
+## Phase 11: Tabs
+- **Goal** - limit to 20 characters. create overflow list. Only allow first 5 to be visible.
+
+## Phase 12 : Bookmarks
+- **Goal** - save as JSON store keyed by the document's file path or SHA-256 hash. Create panel using 
+a QDockWidget docked to Qt.LeftDockWidgetArea. Inside this dock, use a QTabWidget containing:
+    - Contents (Outline): A `QTreeView` displaying the document's hierarchical ToC (`doc.get_toc()`). 
+    - `QListWidget` or `QListView` displaying the user's custom reading marks.
+
+```text
++-------------------+------------------------------------------+
+| Dock Panel (Left) | Main Document View Area                  |
+| [Outline] [Marks] |                                          |
+|-------------------|                                          |
+| • Page 12 - Intro |                 [Page 42]                |
+| • Page 42 - Notes |                                          |
+|                   |                                          |
++-------------------+------------------------------------------+
+```

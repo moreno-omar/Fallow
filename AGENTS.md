@@ -23,6 +23,7 @@
 - Never execute destructive git commands or commit changes automatically.
 - Keep frontend minimal. HTMX. alpine.js to show loading or progress. dark mode. Prefer css over javascript in regards to web design.
 - Create or update SUMMARY.md. Goal: for user too understand how it works and be able to create a simpler functional version on own. Give Summary of important steps taken and why. Provide timestamp.
+- in SUMMARY.md, also add sections: Suggestions (to improve). Possible problems.
 - when you complete a task from `@TASKS.md`, mark it there as complete.
 
 ## Important reading 
