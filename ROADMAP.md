@@ -53,10 +53,11 @@
     - create shortcut for it using `Ctrl-P`
     - all keyboard shortcuts achievable with command palette
     - remove with `esc`
-- **Exit Criteria** : all keyboard shoctus can be performed with command palette. Visible when called with shortcut. Disappears when `esc` is pressed
+- **Exit Criteria** : all keyboard shoctuts can be performed with command palette. Visible when called with shortcut. Disappears when `esc` is pressed
 
 ## Phase 11: Tabs
 - **Goal** - limit to 20 characters. create overflow list. Only allow first 5 to be visible.
+- **Exit Criteria** :
 
 ## Phase 12 : Bookmarks
 - **Goal** - save as JSON store keyed by the document's file path or SHA-256 hash. Create panel using 
@@ -74,3 +75,4 @@ a QDockWidget docked to Qt.LeftDockWidgetArea. Inside this dock, use a QTabWidge
 |                   |                                          |
 +-------------------+------------------------------------------+
 ```
+- **Exit Criteria** :

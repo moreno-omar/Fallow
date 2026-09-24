@@ -1,8 +1,11 @@
-# TASKS.md - Phase 10: Create Command Palette:
+# TASKS.md - Phase 11 : Tabs
 
-- [x] Create Command Palette using PySide6 QDialog that activates with `Ctrl+P`
-- [x] Dialog disappears if `esc` is pressed
-- [x] all keyboard shortcuts (find, dark mode, bookmark, etc) can be found in dialog
-- [x] all keyboard shortcuts (find, dark mode, bookmark, etc) can be peformed once selected from dialog
-- [x] selection from dialog can be done with either mouse or arrow keys. Enter to select best match.
-- [x] Best match is highlighted.
+- [x] Configure QTabWidget so it truncates overflow automatically with an ellipsis (...) and provides scroll arrows
+- [x] Constrain the tabs to a maximum of 180–200px (equivalent to ~20 characters) and a minimum of 80–100px
+- [x] set tooltip to view full document name. 
+- [x] add `overflow dropdown button` a the end of the tab bar
+- [x] `overflow dropdown button` shows a list of all open documents
+- [x] set `Ctrl+Shift+A` (Tab Search) to view all open tabs as a list. Allow user to select which to focus on.
+- [x] Tab Search should be invokable via command palette.
+
+

@@ -1,6 +1,7 @@
 """Application entrypoint for the Fallow PDF reader."""
 
 import sys
+from functools import partial
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from app.core.session import SessionManager
 from app.ui.command_palette import Command, CommandPalette
+from app.ui.document_tabs import DocumentTabBar, TabEntry, TabOverflowButton, TabSearchDialog
 from app.ui.viewer_tab import PDFViewerWidget
 
 
@@ -27,6 +29,7 @@ class MainWindow(QMainWindow):
     """Initial application window."""
 
     STATUS_TIMEOUT_MS = 3000
+    TAB_SEARCH_SHORTCUT = "Ctrl+Shift+A"
     DARK_MODE_SHORTCUTS = ("Ctrl+Shift+D", "Alt+D", "Ctrl+D")
     # "Ctrl++" needs Shift on many layouts, so the plain '=' binding is listed
     # too. Every entry must be unique: Qt drops shortcuts that are registered
@@ -42,10 +45,15 @@ class MainWindow(QMainWindow):
         self.dark_mode = session["dark_mode"] if session else True
         repository_root = Path(__file__).resolve().parents[1]
         self.tabs = QTabWidget()
+        self.tabs.setTabBar(DocumentTabBar(self.tabs))
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
+        self.tabs.currentChanged.connect(self.refresh_tab_window)
         self.tabs.currentChanged.connect(self.update_page_controls)
         self.setCentralWidget(self.tabs)
+        self.overflow_button = TabOverflowButton(self.tab_entries, self)
+        self.overflow_button.document_selected.connect(self.focus_tab)
+        self.tabs.setCornerWidget(self.overflow_button, Qt.Corner.TopRightCorner)
         self.create_menu_bar()
         self.create_bottom_bar()
         self.create_find_bar()
@@ -59,6 +67,7 @@ class MainWindow(QMainWindow):
             self.add_pdf(repository_root / "alices-adventures-in-wonderland.pdf", "Alice")
             self.add_pdf(repository_root / "frankenstein.pdf", "Frankenstein")
         self.update_tab_bar_visibility()
+        self.refresh_tab_window(self.tabs.currentIndex())
         self.dark_mode_action.setChecked(self.dark_mode)
         self.apply_theme()
         self.showMaximized()
@@ -258,6 +267,66 @@ class MainWindow(QMainWindow):
         if palette.exec() == QDialog.DialogCode.Accepted and palette.selected_command is not None:
             palette.selected_command.handler()
 
+    def show_tab_search(self) -> None:
+        """List the open documents and focus the tab the user chooses.
+
+        Like the command palette, the tab is activated only after ``exec()``
+        returns, so no tab is closed or re-indexed while the modal list is open.
+        """
+        commands = self.tab_commands()
+        if not commands:
+            return
+        dialog = TabSearchDialog(commands, self.dark_mode, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted and dialog.selected_command is not None:
+            dialog.selected_command.handler()
+
+    def tab_commands(self) -> list[Command]:
+        """Build one palette entry per open document, each focusing its tab."""
+        return [
+            Command(entry.title, entry.hint, partial(self.focus_tab, entry.index))
+            for entry in self.tab_entries()
+        ]
+
+    def tab_entries(self) -> list[TabEntry]:
+        """Describe every open document for the overflow menu and Tab Search.
+
+        Called on demand rather than cached, so the list is always in step with
+        the tab widget even while tabs are being added or closed.
+        """
+        active_index = self.tabs.currentIndex()
+        entries: list[TabEntry] = []
+        for index in range(self.tabs.count()):
+            viewer = self.tabs.widget(index)
+            if not isinstance(viewer, PDFViewerWidget):
+                continue
+            entries.append(
+                TabEntry(
+                    index=index,
+                    title=self.tabs.tabText(index),
+                    location=str(viewer.engine.file_path),
+                    page=viewer.current_page,
+                    page_count=viewer.engine.page_count,
+                    active=index == active_index,
+                )
+            )
+        return entries
+
+    def focus_tab(self, tab_index: int) -> None:
+        """Activate one open document and hand keyboard focus back to the page."""
+        if not 0 <= tab_index < self.tabs.count():
+            return
+        # Slide the visible window onto the target first, so ``setCurrentIndex``
+        # never has to activate a tab the bar is currently hiding.
+        self.tabs.tabBar().sync_visible_window(tab_index)
+        self.tabs.setCurrentIndex(tab_index)
+        viewer = self.current_viewer()
+        if viewer is not None:
+            viewer.focus_canvas()
+
+    def refresh_tab_window(self, tab_index: int) -> None:
+        """Keep the active tab inside the tab bar's five-tab visible window."""
+        self.tabs.tabBar().sync_visible_window(tab_index)
+
     def collect_commands(self) -> list[Command]:
         """Build every palette entry from menu actions and viewer-level keys."""
         commands = [self.action_command(action) for action in self.menu_actions()]
@@ -320,6 +389,7 @@ class MainWindow(QMainWindow):
         view_menu = self.menuBar().addMenu("View")
         self.palette_action = self.create_action("Command Palette", "Ctrl+P", self.show_command_palette)
         view_menu.addAction(self.palette_action)
+        view_menu.addAction(self.create_action("Tab Search", self.TAB_SEARCH_SHORTCUT, self.show_tab_search))
         view_menu.addSeparator()
         self.dark_mode_action = QAction("Dark Mode", self)
         self.dark_mode_action.setCheckable(True)
@@ -363,6 +433,13 @@ class MainWindow(QMainWindow):
                 "QLabel, QLineEdit, QMenuBar, QMenu, QStatusBar { color: #ECEFF4; }"
                 "QMenuBar::item:selected, QMenu::item:selected { background: #4C566A; }"
                 "QLineEdit { background: #3B4252; border: 1px solid #81A1C1; }"
+                # Menus and the tab overflow button need explicit backgrounds,
+                # otherwise the styled text colour lands on a light default.
+                "QMenu { background: #3B4252; border: 1px solid #4C566A; }"
+                "QMenu::item { padding: 4px 20px 4px 8px; }"
+                "QToolButton { background: #3B4252; color: #ECEFF4; border: 1px solid #4C566A; }"
+                "QToolButton:hover { background: #4C566A; }"
+                "QToolButton::menu-indicator { image: none; }"
             )
         else:
             self.setStyleSheet("")
@@ -399,6 +476,10 @@ class MainWindow(QMainWindow):
         viewer.current_page = min(current_page, viewer.engine.page_count - 1)
         self.connect_viewer(viewer)
         self.tabs.addTab(viewer, title)
+        # Titles are elided to fit the tab width, so the tooltip carries the full
+        # document name (the absolute path also tells apart equal file names).
+        self.refresh_tab_window(self.tabs.currentIndex())
+        self.tabs.setTabToolTip(self.tabs.count() - 1, str(file_path))
         if self.tabs.currentWidget() is viewer:
             self.update_page_controls(self.tabs.currentIndex())
 
@@ -419,11 +500,14 @@ class MainWindow(QMainWindow):
             self.find_input.clear()
             self.find_status.clear()
         self.update_tab_bar_visibility()
+        self.refresh_tab_window(self.tabs.currentIndex())
         self.save_session()
 
     def update_tab_bar_visibility(self) -> None:
-        """Show the tab bar only when more than one document is open."""
-        self.tabs.tabBar().setVisible(self.tabs.count() > 1)
+        """Show the tab strip only when more than one document is open."""
+        has_tab_strip = self.tabs.count() > 1
+        self.tabs.tabBar().setVisible(has_tab_strip)
+        self.overflow_button.setVisible(has_tab_strip)
 
     def save_session(self) -> None:
         """Save the current tabs and active document position."""
