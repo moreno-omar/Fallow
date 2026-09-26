@@ -34,6 +34,14 @@ class ThemeMixin(WindowBase):
                 "QLabel, QLineEdit, QMenuBar, QMenu, QStatusBar { color: #ECEFF4; }"
                 "QMenuBar::item:selected, QMenu::item:selected { background: #4C566A; }"
                 "QLineEdit { background: #3B4252; border: 1px solid #81A1C1; }"
+                # The notes splitter and its two panes need explicit colours for
+                # the same reason as the menus: styled text on a light default
+                # background is unreadable.
+                "QSplitter { background: #2E3440; }"
+                "QSplitter::handle { background: #4C566A; }"
+                "QWidget#notesPanel { background: #292E39; border-right: 1px solid #4C566A; }"
+                "QLabel#notesHeader { color: #ECEFF4; font-weight: bold; }"
+                "QLabel#notesPlaceholder { color: #81A1C1; }"
                 # Menus and the tab overflow button need explicit backgrounds,
                 # otherwise the styled text colour lands on a light default.
                 "QMenu { background: #3B4252; border: 1px solid #4C566A; }"

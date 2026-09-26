@@ -16,6 +16,7 @@ This file is the index; the detail lives in the linked files.
 | 9 — Useful Keyboard Shortcuts | 2026-09-24 | [`26-09-24_phase9-keyboard-shortcuts.md`](logs/26-09-24_phase9-keyboard-shortcuts.md) |
 | 10 — Create Command Palette | 2026-09-24 | [`26-09-24_phase10-command-palette.md`](logs/26-09-24_phase10-command-palette.md) |
 | 11 — Tabs | 2026-09-24 | [`26-09-24_phase11-tabs.md`](logs/26-09-24_phase11-tabs.md) |
+| 12 — Create Panel to View Notes | 2026-09-26 | [`26-09-26_phase12-notes-panel.md`](logs/26-09-26_phase12-notes-panel.md) |
 
 ## Other notes
 
@@ -27,6 +28,8 @@ This file is the index; the detail lives in the linked files.
 
 ## Status
 
-- Phases 1–11 are complete. `ROADMAP.md` Phase 12 (bookmarks dock) is next; `TASKS.md` tracks its sub-tasks.
+- Phases 1–12 (the notes panel) are complete. `ROADMAP.md` has two phases numbered
+  12: the notes panel (done, logged above) and the bookmarks dock, which is next;
+  `TASKS.md` tracks its sub-tasks.
 - Phase 9's `Possible problems` section was stranded at the end of Phase 10 in the old single-file summary; it now sits with Phase 9.
 - The `Refactor: Split MainWindow into a Mixin Package` section of the old summary is superseded by `logs/26-9-25_refactor.md`, which covers the same ground in more detail.

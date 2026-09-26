@@ -59,6 +59,14 @@
 - **Goal** - limit to 20 characters. create overflow list. Only allow first 5 to be visible.
 - **Exit Criteria** :
 
+## Phase 12 : Create Panel to View Notes
+- **Goal** : Using Qspliter, create a Panel that shows up on the left side of the book. Opens with a width of 30%.
+- **Exit Criteria** : Can be toggled with `Ctrl+Shift+E` or `F9`. Can be adjusted. Once reduced to 10% in width, hides panel.
+
+## Phase 13 : Markdown notes
+- **Goal**:
+- **Exit Criteria** :
+
 ## Phase 12 : Bookmarks
 - **Goal** - save as JSON store keyed by the document's file path or SHA-256 hash. Create panel using 
 a QDockWidget docked to Qt.LeftDockWidgetArea. Inside this dock, use a QTabWidget containing:

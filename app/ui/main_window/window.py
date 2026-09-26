@@ -10,7 +10,8 @@ so each layer may use the layers before it:
 4. :class:`~app.ui.main_window.bookmarks.BookmarksMixin` - bookmark toggle
 5. :class:`~app.ui.main_window.navigation.NavigationMixin` - page bar, zoom
 6. :class:`~app.ui.main_window.documents.DocumentsMixin` - tab lifecycle
-7. :class:`~app.ui.main_window.commands.CommandsMixin` - menus and palette
+7. :class:`~app.ui.main_window.notes.NotesMixin` - notes panel and splitter
+8. :class:`~app.ui.main_window.commands.CommandsMixin` - menus and palette
 
 Only this class is instantiated; the mixins exist to be mixed in.
 """
@@ -42,10 +43,10 @@ class MainWindow(CommandsMixin):
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.tabs.currentChanged.connect(self.refresh_tab_window)
         self.tabs.currentChanged.connect(self.update_page_controls)
-        self.setCentralWidget(self.tabs)
         self.overflow_button = TabOverflowButton(self.tab_entries, self)
         self.overflow_button.document_selected.connect(self.focus_tab)
         self.tabs.setCornerWidget(self.overflow_button, Qt.Corner.TopRightCorner)
+        self.create_notes_panel()
         self.create_menu_bar()
         self.create_bottom_bar()
         self.create_find_bar()

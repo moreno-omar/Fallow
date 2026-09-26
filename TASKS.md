@@ -1,11 +1,13 @@
-# TASKS.md - Phase 11 : Tabs
+# TASKS.md - Phase 12 : Create Panel to View Notes
 
-- [x] Configure QTabWidget so it truncates overflow automatically with an ellipsis (...) and provides scroll arrows
-- [x] Constrain the tabs to a maximum of 180–200px (equivalent to ~20 characters) and a minimum of 80–100px
-- [x] set tooltip to view full document name. 
-- [x] add `overflow dropdown button` a the end of the tab bar
-- [x] `overflow dropdown button` shows a list of all open documents
-- [x] set `Ctrl+Shift+A` (Tab Search) to view all open tabs as a list. Allow user to select which to focus on.
-- [x] Tab Search should be invokable via command palette.
+- [x] Use Qspliter to create panel
+- [x] Panel defaults to ~30% width on first run, clamped 360–640px
+- [x] Enforce minimum widths on both panes (PDF ≥ 400px, notes ≥ 320px)
+- [x] Have panel be toggled on/off with `Ctrl+Shift+E` or `F9`
+- [x] Register toggle be accessible to command palette
+- [x] Auto-hide when dragged below ~10% width; restore last size on toggle
+- [x] Persist splitter state across sessions (QSettings)
+- [x] Auto-collapse on first run if window width < 900px
+
 
 

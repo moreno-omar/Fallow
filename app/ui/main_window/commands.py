@@ -14,18 +14,19 @@ from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QDialog
 
 from app.ui.command_palette import Command, CommandPalette
-from app.ui.main_window.documents import DocumentsMixin
+from app.ui.main_window.notes import NotesMixin
 
 
-class CommandsMixin(DocumentsMixin):
+class CommandsMixin(NotesMixin):
     """Build the menus and expose every shortcut to the command palette.
 
-    Layer 7 of the window mixin chain (after ``DocumentsMixin``), so it may wire
+    Layer 8 of the window mixin chain (after ``NotesMixin``), so it may wire
     menu entries to every feature below it.
     """
 
     TAB_SEARCH_SHORTCUT = "Ctrl+Shift+A"
     DARK_MODE_SHORTCUTS = ("Ctrl+Shift+D", "Alt+D", "Ctrl+D")
+    NOTES_PANEL_SHORTCUTS = ("Ctrl+Shift+E", "F9")
     # "Ctrl++" needs Shift on many layouts, so the plain '=' binding is listed
     # too. Every entry must be unique: Qt drops shortcuts that are registered
     # twice for one action as an ambiguous overload.
@@ -57,6 +58,7 @@ class CommandsMixin(DocumentsMixin):
         self.palette_action = self.create_action("Command Palette", "Ctrl+P", self.show_command_palette)
         view_menu.addAction(self.palette_action)
         view_menu.addAction(self.create_action("Tab Search", self.TAB_SEARCH_SHORTCUT, self.show_tab_search))
+        view_menu.addAction(self.create_notes_panel_action())
         view_menu.addSeparator()
         self.dark_mode_action = QAction("Dark Mode", self)
         self.dark_mode_action.setCheckable(True)
@@ -80,6 +82,21 @@ class CommandsMixin(DocumentsMixin):
         zoom_out_action = self.create_action("Zoom Out", "", self.zoom_out)
         zoom_out_action.setShortcuts([QKeySequence(key) for key in self.ZOOM_OUT_SHORTCUTS])
         return zoom_out_action
+
+    def create_notes_panel_action(self) -> QAction:
+        """Create the checkable action that shows or hides the notes panel.
+
+        The action is checked before its ``toggled`` signal is connected, so
+        restoring a hidden panel does not re-enter the visibility slot while the
+        window is still being built.
+        """
+        action = QAction("Notes Panel", self)
+        action.setCheckable(True)
+        action.setShortcuts([QKeySequence(key) for key in self.NOTES_PANEL_SHORTCUTS])
+        action.setChecked(self.notes_visible)
+        action.toggled.connect(self.set_notes_panel_visible)
+        self.notes_action = action
+        return action
 
     def show_command_palette(self) -> None:
         """Open the searchable command palette and run the command it returns.
