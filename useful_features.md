@@ -49,6 +49,8 @@
 ### notes
 - have option to have them all visible (expanded) when toggled.
 
+## highlights
+
 ## Context or Command Palette
 - think like vim or web design w/o buttons
 
