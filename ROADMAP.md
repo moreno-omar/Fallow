@@ -18,12 +18,69 @@
 
 ## Phase 5: Has Preferred PDF settings
 - **Goal:** : To open in Single Page View, Fit to Page Magnification, allow to turn pages with arrow keys or mouse wheel
-- **Exit Criteria:** 
+- **Exit Criteria:** User able to turn pages.
 
 ## Phase 6: Dialog to Pick pdf file
 - **Goal:** : create basic dialog to search for a pdf on the computer. 
 - **Exit Criteria:**  User able to open a new tab with a pdf picked from the dialog. Hardcoded code neede to open pdf not needed in main.
 
-## Phase 6: Dark Mode
-- **Goal:**
-- **Exit Criteria:** 
+## Phase 7: Add useful bottom bar 
+- **Goal:** : In center, provide field to type in page number, to the right of that, display current page and total pages. Example: "83 of 680". Use QToolBar.
+- **Exit Criteria:** User able to view current page number, total number of pages, and able to type what page to navigate to.
+
+## Phase 8: Dark Mode
+- **Goal:** To enable option to toggle on. To have a dark mode pallete that still renders colored code snippets properly.
+- process the pixmap buffer using an HSL/HSV luminance transformation
+- Color Palette Nord / Slate Dark
+    - Background: Deep gray-blue (#2E3440 or #1E1E2E)
+    - Default Text: Off-white / Ice (#ECEFF4)
+- **Exit Criteria:** User can open pdf with color code snippets, shows up properly.
+
+## Phase 9: Useful keyboard shortcuts:
+- **Goal** : Using establish the following shortcuts
+    - `Ctrl+Shift+D` and `Alt-D` as Dark mode toggle
+    - `Ctrl+F` for find
+    - `Ctrl+G` for go to page
+    - `Ctrl+W` for close tab
+    - `Ctrl+B` to bookmark page. Use `Document.make_bookmark()`. Only create scaffold for now.
+    - `Ctrl+Mouse wheel` to zoom in/out. Use `pymupdf.Matrix`
+
+- **Exit Criteria** : User confirms all shortcuts can be used.
+
+## Phase 10: Create Command Palette
+- **Goal** : Using pyside to catch keyboard shortcut, to activate needed functions (like PyMupdf), to have shortcuts and functions achieved by search
+    - create command palette in PySide6 as a QDialog
+    - create shortcut for it using `Ctrl-P`
+    - all keyboard shortcuts achievable with command palette
+    - remove with `esc`
+- **Exit Criteria** : all keyboard shoctuts can be performed with command palette. Visible when called with shortcut. Disappears when `esc` is pressed
+
+## Phase 11: Tabs
+- **Goal** - limit to 20 characters. create overflow list. Only allow first 5 to be visible.
+- **Exit Criteria** :
+
+## Phase 12 : Create Panel to View Notes
+- **Goal** : Using Qspliter, create a Panel that shows up on the left side of the book. Opens with a width of 30%.
+- **Exit Criteria** : Can be toggled with `Ctrl+Shift+E` or `F9`. Can be adjusted. Once reduced to 10% in width, hides panel.
+
+## Phase 13 : Markdown notes
+- **Goal**:
+- **Exit Criteria** :
+
+## Phase 12 : Bookmarks
+- **Goal** - save as JSON store keyed by the document's file path or SHA-256 hash. Create panel using 
+a QDockWidget docked to Qt.LeftDockWidgetArea. Inside this dock, use a QTabWidget containing:
+    - Contents (Outline): A `QTreeView` displaying the document's hierarchical ToC (`doc.get_toc()`). 
+    - `QListWidget` or `QListView` displaying the user's custom reading marks.
+
+```text
++-------------------+------------------------------------------+
+| Dock Panel (Left) | Main Document View Area                  |
+| [Outline] [Marks] |                                          |
+|-------------------|                                          |
+| • Page 12 - Intro |                 [Page 42]                |
+| • Page 42 - Notes |                                          |
+|                   |                                          |
++-------------------+------------------------------------------+
+```
+- **Exit Criteria** :

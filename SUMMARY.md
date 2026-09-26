@@ -1,37 +1,35 @@
-## Phase 1: Create Window
+# Fallow — Implementation Log Index
 
-Completed 2026-09-10.
+Implementation notes for Fallow, one file per phase, all under `logs/`.
+This file is the index; the detail lives in the linked files.
 
-- Confirmed PySide6 `6.11.2` is installed in the local `.venv` environment and already listed in `requirements.txt`.
-- Added `app/main.py` with a minimal `QMainWindow` entrypoint.
-- The window opens maximized and can be launched with `python -m app.main`.
+| Phase | Completed | Log |
+|---|---|---|
+| 1 — Create Window | 2026-09-10 | [`26-09-10_phase1-create-window.md`](logs/26-09-10_phase1-create-window.md) |
+| 2 — Render PDF in PySide6 Window | 2026-09-10 | [`26-09-10_phase2-render-pdf.md`](logs/26-09-10_phase2-render-pdf.md) |
+| 3 — Open Multiple PDF in Tabs | 2026-09-10 | [`26-09-10_phase3-multiple-pdf-tabs.md`](logs/26-09-10_phase3-multiple-pdf-tabs.md) |
+| 4 — Save Session | 2026-09-10 | [`26-09-10_phase4-save-session.md`](logs/26-09-10_phase4-save-session.md) |
+| 5 — Preferred PDF Settings | 2026-09-10 | [`26-09-10_phase5-preferred-pdf-settings.md`](logs/26-09-10_phase5-preferred-pdf-settings.md) |
+| 6 — Dialog to Pick PDF File | 2026-09-10 | [`26-09-10_phase6-open-file-dialog.md`](logs/26-09-10_phase6-open-file-dialog.md) |
+| 7 — Useful Bottom Bar | 2026-09-10 | [`26-09-10_phase7-bottom-bar.md`](logs/26-09-10_phase7-bottom-bar.md) |
+| 8 — Dark Mode | 2026-09-10 | [`26-09-10_phase8-dark-mode.md`](logs/26-09-10_phase8-dark-mode.md) |
+| 9 — Useful Keyboard Shortcuts | 2026-09-24 | [`26-09-24_phase9-keyboard-shortcuts.md`](logs/26-09-24_phase9-keyboard-shortcuts.md) |
+| 10 — Create Command Palette | 2026-09-24 | [`26-09-24_phase10-command-palette.md`](logs/26-09-24_phase10-command-palette.md) |
+| 11 — Tabs | 2026-09-24 | [`26-09-24_phase11-tabs.md`](logs/26-09-24_phase11-tabs.md) |
+| 12 — Create Panel to View Notes | 2026-09-26 | [`26-09-26_phase12-notes-panel.md`](logs/26-09-26_phase12-notes-panel.md) |
 
+## Other notes
 
-## Phase 2: Render PDF in PySide6 Window
+| Note | Date | File |
+|---|---|---|
+| `MainWindow` split into a mixin package: the chain, and why Pylance needs it | 2026-09-25 | [`26-9-25_refactor.md`](logs/26-9-25_refactor.md) |
+| Flat mixins with a declared host contract (Option B) — plan only, postponed | 2026-09-25 | [`flat_mixins_declared_contract_refactor.md`](logs/flat_mixins_declared_contract_refactor.md) |
+| Developer environment: chat terminal "was closed" errors, caused by `PROMPT_COMMAND` being clobbered in `~/.bashrc` | 2026-09-25 | [`2026-09-25_vscode-terminal-shell-integration.md`](logs/2026-09-25_vscode-terminal-shell-integration.md) |
 
-Completed 2026-09-10.
+## Status
 
-- Added a PyMuPDF render engine that opens the bundled Alice PDF and rasterizes only the requested page.
-- Added a single-page viewer that fits the active page to the available viewport and rerenders on resize.
-- Connected the viewer to the maximized main window.
-
-## Phase 3: Open Multiple PDF in Tabs
-
-Completed 2026-09-10.
-
-- `main.py` had to change because the single-document version placed one `PDFViewerWidget` directly in `QMainWindow.setCentralWidget()`. A window can have only one central widget, so multiple viewers need a `QTabWidget` container instead.
-- To implement the change, create a `QTabWidget`, set it as the central widget, and add one `PDFViewerWidget` per PDF with `addTab()`. Connect `tabCloseRequested` to a method that removes the tab, disposes the viewer, and updates tab-bar visibility.
-- Added a native `QTabWidget` containing Alice and Frankenstein at startup.
-- The tab bar is hidden for one open document and shown for two or more.
-- Individual tabs can be closed without terminating the application.
-
-## Phase 4: Save Session
-
-Completed 2026-09-10.
-
-- `SessionManager` replaced the hard-coded startup PDF list in `main.py`. That list could open the initial documents but could not remember which files, pages, or tab were active after the application closed.
-- It was needed to keep JSON file storage, XDG path selection, type validation, missing-file checks, and session restoration separate from the window's tab-management code.
-- Added `SessionManager` to persist the active tab, open absolute PDF paths, and each viewer's current page as JSON.
-- The session is stored at `$XDG_CONFIG_HOME/linux-pdf-reader/session.json`, falling back to `~/.config/linux-pdf-reader/session.json`.
-- Startup validates saved entries and existing files before restoring tabs; missing or malformed entries are skipped safely.
-- Session state is saved when a tab closes and when the main window closes. A future improvement would be to centralize viewer state accessors instead of reading the viewer's internal disposal flag during serialization.
+- Phases 1–12 (the notes panel) are complete. `ROADMAP.md` has two phases numbered
+  12: the notes panel (done, logged above) and the bookmarks dock, which is next;
+  `TASKS.md` tracks its sub-tasks.
+- Phase 9's `Possible problems` section was stranded at the end of Phase 10 in the old single-file summary; it now sits with Phase 9.
+- The `Refactor: Split MainWindow into a Mixin Package` section of the old summary is superseded by `logs/26-9-25_refactor.md`, which covers the same ground in more detail.

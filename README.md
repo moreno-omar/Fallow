@@ -30,6 +30,9 @@ pip install -r requirements.txt
 python -m app.main
 ```
 
+## Save Session file
+- JSON stored at the XDG Base Directory specification at `$XDG_CONFIG_HOME/linux-pdf-reader/session.json` (falling back to `~/.config/linux-pdf-reader/session.json`).
+
 ## Future Roadmap
 - Support for EPUB and comic formats (CBZ/CBR).
 - Dual-page spread mode.

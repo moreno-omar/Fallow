@@ -49,7 +49,7 @@ class SessionManager:
             active_tab_index = 0
         active_tab_index = min(max(active_tab_index, 0), max(len(tabs) - 1, 0))
 
-        dark_mode = data.get("dark_mode", False)
+        dark_mode = data.get("dark_mode", True)
         if not isinstance(dark_mode, bool):
             dark_mode = False
 
