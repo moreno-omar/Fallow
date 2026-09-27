@@ -1,0 +1,15 @@
+#!/bin/sh
+# Entry point of the AppImage. The AppImage runtime mounts the squashfs image and
+# executes this file from the mount point, so "$0" is the path to AppRun there.
+set -eu
+
+HERE="$(dirname "$(readlink -f "$0")")"
+
+export PYTHONPATH="${HERE}/usr/share/fallow${PYTHONPATH:+:${PYTHONPATH}}"
+export PYTHONDONTWRITEBYTECODE=1
+
+# ``-P`` keeps the current working directory off sys.path. Without it, starting
+# the AppImage from inside a source checkout would import the checkout's own
+# ``app`` package (the working directory is sys.path[0]) instead of the bundled
+# one. PYTHONPATH is unaffected, so the packaged code still wins.
+exec "${HERE}/usr/python/bin/python3" -P -m app.main "$@"

@@ -3,6 +3,17 @@ __pycache__/
 *.pyc
 .venv/
 
+### packaging build outputs ###
+build/
+dist/
+*.AppImage
+*.flatpak
+.flatpak-builder/
+# artifacts that can land next to the packaging sources instead of in build/
+flatpak/*.so
+flatpak/*.flatpak
+appimage/*.AppImage
+
 ### Django ###
 *.log
 *.pot

@@ -93,6 +93,15 @@
 ```
 - **Exit Criteria** :
 
-## Phase 14 : Markdown notes
+
+## Phase 14 : Flatpak and AppImage
+- **Goal** : create files that allow app to be installed without having to git clone and build app.
+- **Troubleshooting done**:
+    - flatpak-pip-generator complains about PySide. Recommends to build on top of that.
+    - valid link to generator: https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/pip/flatpak-pip-generator.py
+- **Exit Criteria** : app can be launched as a Flatpak and AppImage. Document steps to build apps in flatpak_appimage_build.md
+
+
+## Phase 15 : Markdown notes
 - **Goal**:
 - **Exit Criteria** :

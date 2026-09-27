@@ -67,6 +67,23 @@ class DocumentsMixin(NavigationMixin):
         """Create a readable tab title from a PDF filename."""
         return file_path.stem.replace("-", " ").title()
 
+    def add_sample_documents(self, repository_root: Path) -> None:
+        """Open the sample PDFs of a source checkout, skipping the missing ones.
+
+        The samples sit next to the source and are excluded from version control
+        (``.gitignore`` lists ``*.pdf``), so a Flatpak, AppImage, or installed
+        build has none. Missing samples therefore leave the window empty rather
+        than failing to start, and the reader picks a document with ``Ctrl+O``.
+        """
+        samples = (
+            ("alices-adventures-in-wonderland.pdf", "Alice"),
+            ("frankenstein.pdf", "Frankenstein"),
+        )
+        for file_name, title in samples:
+            sample_path = repository_root / file_name
+            if sample_path.is_file():
+                self.add_pdf(sample_path, title)
+
     def close_current_tab(self) -> None:
         """Close the active document tab while keeping the window open."""
         tab_index = self.tabs.currentIndex()

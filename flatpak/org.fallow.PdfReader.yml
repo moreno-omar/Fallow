@@ -1,0 +1,68 @@
+# Flatpak manifest for Fallow PDF Reader.
+#
+# Build it with flatpak/build-flatpak.sh, not by hand: the BaseApp branch has to
+# match the runtime branch, and the script keeps the two in step.
+#
+# Why a BaseApp: PySide6 has no source distribution and its wheels are hundreds
+# of megabytes, so flatpak-pip-generator refuses to generate a module for it and
+# points at io.qt.PySide.BaseApp instead. That BaseApp already ships PySide6,
+# shiboken6 and numpy compiled against this exact runtime, which is why
+# python3-modules.json below only contains PyMuPDF.
+app-id: org.fallow.PdfReader
+runtime: org.kde.Platform
+runtime-version: '6.11'
+sdk: org.kde.Sdk
+base: io.qt.PySide.BaseApp
+base-version: '6.11'
+command: fallow
+
+finish-args:
+  # Qt needs the shared-memory segment when it renders through X11.
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  # Rasterising PDF pages uses the GPU when it is available.
+  - --device=dri
+  # A reader has to be able to re-open the documents of the saved session, so
+  # the whole home directory stays readable instead of only the file picked in
+  # a dialog (which the portal would grant on its own).
+  - --filesystem=home
+
+build-options:
+  env:
+    # The reader has no browser engine; dropping it shrinks the build a lot.
+    - BASEAPP_REMOVE_WEBENGINE=1
+
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
+
+modules:
+  # PyMuPDF only - see the comment at the top of this file.
+  - python3-modules.json
+
+  - name: fallow
+    buildsystem: simple
+    sources:
+      - type: dir
+        path: ../app
+        dest: app
+      - type: file
+        path: fallow-launcher.sh
+      - type: file
+        path: ../packaging/org.fallow.PdfReader.desktop
+      - type: file
+        path: ../packaging/org.fallow.PdfReader.metainfo.xml
+      - type: file
+        path: ../packaging/org.fallow.PdfReader.svg
+      - type: file
+        path: ../packaging/org.fallow.PdfReader-256.png
+    build-commands:
+      - install -d /app/lib/fallow
+      - cp -r app /app/lib/fallow/
+      - find /app/lib/fallow -name __pycache__ -prune -exec rm -rf {} +
+      - find /app/lib/fallow -name '*.pyc' -delete
+      - install -Dm755 fallow-launcher.sh /app/bin/fallow
+      - install -Dm644 org.fallow.PdfReader.desktop /app/share/applications/org.fallow.PdfReader.desktop
+      - install -Dm644 org.fallow.PdfReader.metainfo.xml /app/share/metainfo/org.fallow.PdfReader.metainfo.xml
+      - install -Dm644 org.fallow.PdfReader.svg /app/share/icons/hicolor/scalable/apps/org.fallow.PdfReader.svg
+      - install -Dm644 org.fallow.PdfReader-256.png /app/share/icons/hicolor/256x256/apps/org.fallow.PdfReader.png
