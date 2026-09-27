@@ -35,6 +35,39 @@ class RenderEngine:
         """Return the number of pages in the open document."""
         return self.document.page_count
 
+    @property
+    def title(self) -> str | None:
+        """Return the document's title metadata, when it carries a usable one."""
+        return self._metadata_value("title")
+
+    @property
+    def author(self) -> str | None:
+        """Return the document's author metadata, when it carries a usable one."""
+        return self._metadata_value("author")
+
+    def _metadata_value(self, key: str) -> str | None:
+        """Read one PDF metadata field, treating blank strings as absent.
+
+        PyMuPDF reports every field it knows about, defaulting the unknown ones
+        to an empty string, so a blank value has to be normalised to ``None`` or
+        it would overwrite a real title already stored for the book.
+        """
+        metadata = self.document.metadata or {}
+        value = metadata.get(key)
+        if not isinstance(value, str):
+            return None
+        stripped = value.strip()
+        return stripped or None
+
+    def outline(self) -> list[tuple[int, str, int]]:
+        """Return the document's table of contents as ``(level, title, page)`` rows.
+
+        The rows come straight from PyMuPDF's ``Document.get_toc()``; ``page`` is
+        one-based and is ``-1`` for a heading without a destination. The sidebar
+        is what turns the levels into a tree and the pages into zero-based jumps.
+        """
+        return [(int(level), str(title), int(page)) for level, title, page in self.document.get_toc()]
+
     def render_page(
         self,
         page_number: int,

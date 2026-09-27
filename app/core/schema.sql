@@ -1,20 +1,5 @@
-
-## how relation should look
-
-```text
-~/.local/share/yourapp/
-├── library.db                  # SQLite (schema as revised)
-└── notes/
-    └── <book-hash>/
-        ├── note-<uuid>.md      # the actual Markdown
-        └── ...
-```
-
-## demo sqlite schema
-
-```sql
 -- ============================================================
--- database_schema.sql
+-- schema.sql
 -- ============================================================
 --
 -- IDENTITY MODEL
@@ -45,6 +30,16 @@
 --   the schema changes and add a migration in app code. Never edit
 --   this file for an existing install without a migration.
 --
+-- HOW THIS FILE IS RUN
+--   ``Database.initialize()`` runs this script exactly once: only when
+--   PRAGMA user_version is still 0. It is never executed against a
+--   database that already carries a schema version.
+--   The DDL is wrapped in one transaction and PRAGMA user_version is the
+--   last statement, so a failed run leaves user_version at 0 and can be
+--   retried instead of leaving a half-created schema behind.
+--   ``PRAGMA foreign_keys`` is deliberately NOT here: it is per-connection
+--   state, so Database.connect() sets it on every connection.
+--
 -- INVARIANTS
 --   - Exactly one book_locations row per book has is_primary = 1
 --     (enforced by partial unique index below).
@@ -54,11 +49,10 @@
 --
 -- ============================================================
 
-PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;      -- concurrent reads while writing
 PRAGMA synchronous = NORMAL;    -- good balance for a desktop app
 
-PRAGMA user_version = 1;
+BEGIN;
 
 -- ============================================================
 -- Books: identified by content hash, not path
@@ -106,7 +100,7 @@ CREATE TABLE notes (
     uuid        TEXT NOT NULL,                 -- filename stem of the .md
     book_id     INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
 
-    -- RELATIVE to the notes root (~/.local/share/yourapp/notes/).
+    -- RELATIVE to the notes root (<data_root>/notes/).
     -- Example value: "<book-hash>/note-<uuid>.md"
     -- Full path = notes_root / file_path.
     -- Never store an absolute path.
@@ -115,7 +109,7 @@ CREATE TABLE notes (
     file_path   TEXT NOT NULL,
 
     title       TEXT,                          -- optional; often first H1
-    page        INTEGER,                       -- nullable
+    page        INTEGER,                       -- nullable, zero-based
     anchor_text TEXT,                          -- nullable (highlight anchor)
 
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -163,6 +157,7 @@ CREATE INDEX idx_note_tags_note ON note_tags(note_id);
 
 -- ============================================================
 -- Bookmarks: app-local, keyed by book (content hash identity)
+--   page is zero-based, matching PyMuPDF and the session file.
 -- ============================================================
 CREATE TABLE bookmarks (
     id         INTEGER PRIMARY KEY,
@@ -177,4 +172,9 @@ CREATE TABLE bookmarks (
 );
 
 CREATE INDEX idx_bookmarks_book_page ON bookmarks(book_id, page);
-```
+
+-- The schema version is the last statement: it is the marker that tells
+-- Database.initialize() the script has already been applied.
+PRAGMA user_version = 1;
+
+COMMIT;

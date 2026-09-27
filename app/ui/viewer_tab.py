@@ -27,7 +27,6 @@ class PDFViewerWidget(QWidget):
         self.current_page = 0
         self.dark_mode = dark_mode
         self.zoom = 1.0
-        self.bookmarks: dict[int, int] = {}
         self._wheel_delta = 0
         self._find_query = ""
         self._match_page = -1
@@ -152,26 +151,6 @@ class PDFViewerWidget(QWidget):
         self._active_match = -1
         if had_matches and not self._disposed:
             self.render_current_page()
-
-    def toggle_bookmark(self) -> bool:
-        """Toggle a location pointer for the active page.
-
-        Returns ``True`` when a bookmark was added and ``False`` when one was
-        removed. This is the Phase 12 scaffold: pointers live in memory only,
-        because persistent storage and the bookmarks dock are not built yet.
-        """
-        if self.current_page in self.bookmarks:
-            del self.bookmarks[self.current_page]
-            return False
-        pointer = self.engine.make_bookmark(self.current_page)
-        if pointer is None:
-            return False
-        self.bookmarks[self.current_page] = pointer
-        return True
-
-    def bookmark_pages(self) -> list[int]:
-        """Return the zero-based pages bookmarked in this document, in order."""
-        return sorted(self.bookmarks)
 
     def focus_canvas(self) -> None:
         """Give keyboard focus back to the rendered page area."""

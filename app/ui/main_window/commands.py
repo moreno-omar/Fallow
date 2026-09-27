@@ -10,23 +10,27 @@ The one exception, ``Esc``, lives in :mod:`app.ui.main_window.find` because it
 belongs to the find bar rather than to a menu.
 """
 
+from functools import partial
+
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QDialog
 
 from app.ui.command_palette import Command, CommandPalette
-from app.ui.main_window.notes import NotesMixin
+from app.ui.library_dialog import LibraryLocationDialog
+from app.ui.main_window.sidebar import SidebarMixin
+from app.ui.sidebar import BOOKMARKS_TAB, NOTES_TAB
 
 
-class CommandsMixin(NotesMixin):
+class CommandsMixin(SidebarMixin):
     """Build the menus and expose every shortcut to the command palette.
 
-    Layer 8 of the window mixin chain (after ``NotesMixin``), so it may wire
+    Layer 8 of the window mixin chain (after ``SidebarMixin``), so it may wire
     menu entries to every feature below it.
     """
 
     TAB_SEARCH_SHORTCUT = "Ctrl+Shift+A"
     DARK_MODE_SHORTCUTS = ("Ctrl+Shift+D", "Alt+D", "Ctrl+D")
-    NOTES_PANEL_SHORTCUTS = ("Ctrl+Shift+E", "F9")
+    SIDEBAR_PANEL_SHORTCUTS = ("Ctrl+Shift+E", "F9")
     # "Ctrl++" needs Shift on many layouts, so the plain '=' binding is listed
     # too. Every entry must be unique: Qt drops shortcuts that are registered
     # twice for one action as an ambiguous overload.
@@ -47,18 +51,27 @@ class CommandsMixin(NotesMixin):
         file_menu.addAction(self.create_open_action())
         file_menu.addAction(self.create_action("Close Tab", "Ctrl+W", self.close_current_tab))
         file_menu.addSeparator()
+        file_menu.addAction(self.create_action("Library Location…", "", self.show_library_dialog))
+        file_menu.addSeparator()
         file_menu.addAction(self.create_action("Quit", "Ctrl+Q", self.quit_application))
 
         edit_menu = self.menuBar().addMenu("Edit")
         edit_menu.addAction(self.create_action("Find", "Ctrl+F", self.show_find_bar))
         edit_menu.addAction(self.create_action("Go to Page", "Ctrl+G", self.focus_page_input))
         edit_menu.addAction(self.create_action("Bookmark Page", "Ctrl+B", self.toggle_bookmark))
+        edit_menu.addAction(self.create_action("New Note", "", self.create_note))
 
         view_menu = self.menuBar().addMenu("View")
         self.palette_action = self.create_action("Command Palette", "Ctrl+P", self.show_command_palette)
         view_menu.addAction(self.palette_action)
         view_menu.addAction(self.create_action("Tab Search", self.TAB_SEARCH_SHORTCUT, self.show_tab_search))
-        view_menu.addAction(self.create_notes_panel_action())
+        view_menu.addAction(self.create_sidebar_action())
+        view_menu.addAction(
+            self.create_action("Show Bookmarks", "", partial(self.show_sidebar_tab, BOOKMARKS_TAB))
+        )
+        view_menu.addAction(
+            self.create_action("Show Notes", "", partial(self.show_sidebar_tab, NOTES_TAB))
+        )
         view_menu.addSeparator()
         self.dark_mode_action = QAction("Dark Mode", self)
         self.dark_mode_action.setCheckable(True)
@@ -83,20 +96,51 @@ class CommandsMixin(NotesMixin):
         zoom_out_action.setShortcuts([QKeySequence(key) for key in self.ZOOM_OUT_SHORTCUTS])
         return zoom_out_action
 
-    def create_notes_panel_action(self) -> QAction:
-        """Create the checkable action that shows or hides the notes panel.
+    def create_sidebar_action(self) -> QAction:
+        """Create the checkable action that shows or hides the sidebar.
 
         The action is checked before its ``toggled`` signal is connected, so
-        restoring a hidden panel does not re-enter the visibility slot while the
-        window is still being built.
+        restoring a hidden sidebar does not re-enter the visibility slot while
+        the window is still being built.
         """
-        action = QAction("Notes Panel", self)
+        action = QAction("Side Panel", self)
         action.setCheckable(True)
-        action.setShortcuts([QKeySequence(key) for key in self.NOTES_PANEL_SHORTCUTS])
-        action.setChecked(self.notes_visible)
-        action.toggled.connect(self.set_notes_panel_visible)
-        self.notes_action = action
+        action.setShortcuts([QKeySequence(key) for key in self.SIDEBAR_PANEL_SHORTCUTS])
+        action.setChecked(self.sidebar_visible)
+        action.toggled.connect(self.set_sidebar_visible)
+        self.sidebar_action = action
         return action
+
+    def show_library_dialog(self) -> None:
+        """Let the reader choose the folder that holds notes and bookmarks.
+
+        The switch happens only after ``exec()`` returns, so the temporary state
+        the dialog describes cannot change underneath it. An unchanged choice is
+        reported rather than re-opened, because re-opening a library costs a full
+        re-read of the sidebar.
+        """
+        dialog = LibraryLocationDialog(
+            self.database.data_root,
+            self.configured_data_root(),
+            self.database.temporary,
+            self.dark_mode,
+            self,
+        )
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        if dialog.selected_root == self.configured_data_root():
+            self.statusBar().showMessage("Library location unchanged", self.STATUS_TIMEOUT_MS)
+            return
+        self.switch_library(dialog.selected_root)
+        if self.database.temporary:
+            self.statusBar().showMessage(
+                "That folder could not be written; still in temporary mode",
+                self.STATUS_TIMEOUT_MS,
+            )
+        else:
+            self.statusBar().showMessage(
+                f"Library location: {self.database.data_root}", self.STATUS_TIMEOUT_MS
+            )
 
     def show_command_palette(self) -> None:
         """Open the searchable command palette and run the command it returns.

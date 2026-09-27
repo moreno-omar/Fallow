@@ -10,7 +10,7 @@ so each layer may use the layers before it:
 4. :class:`~app.ui.main_window.bookmarks.BookmarksMixin` - bookmark toggle
 5. :class:`~app.ui.main_window.navigation.NavigationMixin` - page bar, zoom
 6. :class:`~app.ui.main_window.documents.DocumentsMixin` - tab lifecycle
-7. :class:`~app.ui.main_window.notes.NotesMixin` - notes panel and splitter
+7. :class:`~app.ui.main_window.sidebar.SidebarMixin` - sidebar and splitter
 8. :class:`~app.ui.main_window.commands.CommandsMixin` - menus and palette
 
 Only this class is instantiated; the mixins exist to be mixed in.
@@ -35,6 +35,12 @@ class MainWindow(CommandsMixin):
         self.session_manager = SessionManager()
         session = self.session_manager.load()
         self.dark_mode = session["dark_mode"] if session else True
+        # Settings first, because they say where the library lives; then the
+        # library itself, because the sidebar reads bookmarks and notes from it.
+        # ``create_storage`` is allowed to fall back to a temporary library, so
+        # it never aborts the launch.
+        self.create_settings()
+        self.create_storage()
         # app/ui/main_window/window.py -> repository root, where the sample PDFs live.
         repository_root = Path(__file__).resolve().parents[3]
         self.tabs = QTabWidget()
@@ -46,7 +52,7 @@ class MainWindow(CommandsMixin):
         self.overflow_button = TabOverflowButton(self.tab_entries, self)
         self.overflow_button.document_selected.connect(self.focus_tab)
         self.tabs.setCornerWidget(self.overflow_button, Qt.Corner.TopRightCorner)
-        self.create_notes_panel()
+        self.create_sidebar()
         self.create_menu_bar()
         self.create_bottom_bar()
         self.create_find_bar()

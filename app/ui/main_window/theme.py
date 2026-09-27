@@ -34,14 +34,29 @@ class ThemeMixin(WindowBase):
                 "QLabel, QLineEdit, QMenuBar, QMenu, QStatusBar { color: #ECEFF4; }"
                 "QMenuBar::item:selected, QMenu::item:selected { background: #4C566A; }"
                 "QLineEdit { background: #3B4252; border: 1px solid #81A1C1; }"
-                # The notes splitter and its two panes need explicit colours for
+                # The sidebar splitter and its panes need explicit colours for
                 # the same reason as the menus: styled text on a light default
                 # background is unreadable.
                 "QSplitter { background: #2E3440; }"
                 "QSplitter::handle { background: #4C566A; }"
                 "QWidget#notesPanel { background: #292E39; border-right: 1px solid #4C566A; }"
-                "QLabel#notesHeader { color: #ECEFF4; font-weight: bold; }"
-                "QLabel#notesPlaceholder { color: #81A1C1; }"
+                "QWidget#bookmarksPanel, QWidget#bookmarksSection, QWidget#notesHeaderRow { background: #292E39; }"
+                "QLabel#notesHeader, QLabel#panelHeader { color: #ECEFF4; font-weight: bold; }"
+                # The sidebar is a tab widget of its own, so its tab strip is
+                # styled directly rather than inheriting the document tab look.
+                "QTabWidget#sidebar > QTabBar::tab { background: #3B4252; color: #ECEFF4; padding: 5px 12px; }"
+                "QTabWidget#sidebar > QTabBar::tab:selected { background: #292E39; color: #ECEFF4; }"
+                "QTabWidget#sidebar::pane { background: #292E39; border: none; border-right: 1px solid #4C566A; }"
+                "QTreeView#outlineView, QListWidget#marksList, QListWidget#notesList { background: #2E3440;"
+                " color: #ECEFF4; border: 1px solid #4C566A; }"
+                "QTreeView#outlineView::item:selected, QListWidget#marksList::item:selected,"
+                " QListWidget#notesList::item:selected { background: #4C566A; color: #ECEFF4; }"
+                "QPlainTextEdit#noteEditor { background: #2E3440; color: #ECEFF4;"
+                " border: 1px solid #4C566A; }"
+                "QToolButton#addNoteButton { padding: 0px 6px; font-weight: bold; }"
+                # Degraded-storage warning in the status bar; it is a permanent
+                # widget, so it must not look like a transient message.
+                "QLabel#storageNotice { color: #EBCB8B; }"
                 # Menus and the tab overflow button need explicit backgrounds,
                 # otherwise the styled text colour lands on a light default.
                 "QMenu { background: #3B4252; border: 1px solid #4C566A; }"
