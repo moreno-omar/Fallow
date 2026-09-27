@@ -63,13 +63,10 @@
 - **Goal** : Using Qspliter, create a Panel that shows up on the left side of the book. Opens with a width of 30%.
 - **Exit Criteria** : Can be toggled with `Ctrl+Shift+E` or `F9`. Can be adjusted. Once reduced to 10% in width, hides panel.
 
-## Phase 13 : Markdown notes
-- **Goal**:
-- **Exit Criteria** :
 
-## Phase 12 : Bookmarks
-- **Goal** - save as JSON store keyed by the document's file path or SHA-256 hash. Create panel using 
-a QDockWidget docked to Qt.LeftDockWidgetArea. Inside this dock, use a QTabWidget containing:
+## Phase 13 : Bookmarks
+- **Goal** - create panel same as `notes_panel`, should show up as tab if `notes_panel` is opened.
+- save as JSON store keyed by the document's file path or SHA-256 hash. Create panel using a QDockWidget docked to Qt.LeftDockWidgetArea. Inside this dock, use a QTabWidget containing:
     - Contents (Outline): A `QTreeView` displaying the document's hierarchical ToC (`doc.get_toc()`). 
     - `QListWidget` or `QListView` displaying the user's custom reading marks.
 
@@ -83,4 +80,28 @@ a QDockWidget docked to Qt.LeftDockWidgetArea. Inside this dock, use a QTabWidge
 |                   |                                          |
 +-------------------+------------------------------------------+
 ```
+
+```text
+┌───────┬──────────────────┐
+│ [📑][📝] │                 │
+│         │                  │
+│ content │     PDF view     │
+│  of     │                  │
+│ active  │                  │
+│  tab    │                  │
+└───────┴──────────────────┘
+```
+- **Exit Criteria** :
+
+
+## Phase 14 : Flatpak and AppImage
+- **Goal** : create files that allow app to be installed without having to git clone and build app.
+- **Troubleshooting done**:
+    - flatpak-pip-generator complains about PySide. Recommends to build on top of that.
+    - valid link to generator: https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/pip/flatpak-pip-generator.py
+- **Exit Criteria** : app can be launched as a Flatpak and AppImage. Document steps to build apps in flatpak_appimage_build.md
+
+
+## Phase 15 : Markdown notes
+- **Goal**:
 - **Exit Criteria** :

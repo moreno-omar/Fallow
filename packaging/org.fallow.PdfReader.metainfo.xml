@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata. The <id>, the .desktop filename, and the icon filename all
+  have to be the same string ("org.fallow.PdfReader") or the desktop environment
+  cannot connect the three, and Flathub rejects the submission.
+
+  <project_license> is GPL-3.0 (SPDX spells that "GPL-3.0-only"; the bare
+  "GPL-3.0" id is deprecated). It matches the LICENSE file at the repository
+  root, which is what Flathub compares it against.
+
+  The screenshot below has to be the "raw" URL. The GitHub *blob* URL
+  (github.com/.../blob/...) serves an HTML page, not the image, so a software
+  centre would show nothing; raw.githubusercontent.com serves the file itself.
+-->
+<component type="desktop-application">
+  <id>org.fallow.PdfReader</id>
+
+  <name>Fallow PDF Reader</name>
+  <summary>Read PDFs one page at a time, distraction free</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+
+  <description>
+    <p>
+      Fallow is a lightweight PDF reader for Linux desktops built with Python and
+      PySide6. It shows a single page at a time with fit-to-page magnification, so
+      reading a document never turns into scrolling a canvas.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Open several documents at once, each in its own tab</li>
+      <li>Restore the open tabs and the exact page position on the next launch</li>
+      <li>Turn pages with the arrow keys, Page Up/Down, or the mouse wheel</li>
+      <li>Dark mode for both the window and the rendered page</li>
+      <li>Bookmarks and notes per document, stored locally in SQLite</li>
+      <li>A command palette that reaches every shortcut</li>
+    </ul>
+    <p>
+      The reader works entirely offline: it opens the files you pick and writes
+      nothing besides its own session and library files.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">org.fallow.PdfReader.desktop</launchable>
+
+  <url type="homepage">https://github.com/moreno-omar/Fallow</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>The command palette and the reading sidebar</caption>
+      <image type="source">https://raw.githubusercontent.com/moreno-omar/Fallow/main/fallow-screenshot.png</image>
+    </screenshot>
+  </screenshots>
+
+  <categories>
+    <category>Office</category>
+    <category>Viewer</category>
+  </categories>
+
+  <provides>
+    <binary>fallow</binary>
+    <mediatype>application/pdf</mediatype>
+  </provides>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.14.0" date="2026-09-27">
+      <description>
+        <p>First packaged release: Flatpak and AppImage builds.</p>
+      </description>
+    </release>
+  </releases>
+</component>

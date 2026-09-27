@@ -17,6 +17,8 @@ This file is the index; the detail lives in the linked files.
 | 10 — Create Command Palette | 2026-09-24 | [`26-09-24_phase10-command-palette.md`](logs/26-09-24_phase10-command-palette.md) |
 | 11 — Tabs | 2026-09-24 | [`26-09-24_phase11-tabs.md`](logs/26-09-24_phase11-tabs.md) |
 | 12 — Create Panel to View Notes | 2026-09-26 | [`26-09-26_phase12-notes-panel.md`](logs/26-09-26_phase12-notes-panel.md) |
+| 13 — Bookmarks (sidebar + SQLite library) | 2026-09-27 | [`26-09-27_phase13-bookmarks.md`](logs/26-09-27_phase13-bookmarks.md) |
+| 14 — Flatpak and AppImage | 2026-09-27 | [`2026-09-27_flatpak-appimage.md`](logs/2026-09-27_flatpak-appimage.md) |
 
 ## Other notes
 
@@ -28,8 +30,24 @@ This file is the index; the detail lives in the linked files.
 
 ## Status
 
-- Phases 1–12 (the notes panel) are complete. `ROADMAP.md` has two phases numbered
-  12: the notes panel (done, logged above) and the bookmarks dock, which is next;
-  `TASKS.md` tracks its sub-tasks.
+- Phases 1–14 are complete. Phase 13 established the SQLite storage layer
+  (`app/core/schema.sql`, `app/core/hashing.py`, `app/core/database.py`), turned the
+  Phase 12 notes panel into the tabbed sidebar (`app/ui/sidebar.py`,
+  `app/ui/bookmarks_panel.py`, `app/ui/main_window/sidebar.py`), and moved the `Ctrl+B`
+  bookmark from an in-memory viewer dict to content-hash-keyed rows in `library.db`.
+- The `missing` and `troubleshooting` lists added to `TASKS.md` afterwards are done in the same
+  log file: the palette reaches both sidebar tabs (`Show Bookmarks`, `Show Notes`) and creates a
+  note (`New Note`), the notes pane has a "+" button with an autosaving editor, a non-writable
+  data directory degrades to a temporary library (status-bar notice + `File ▸ Library Location…`
+  dialog), and the outline is cached per book and not rebuilt when it has not changed.
+- Phase 15 (Markdown notes) is next. Note bodies are created and edited as plain text now, so
+  what remains is Markdown rendering, a preview pane, tag parsing, and detecting edits made
+  outside the app. The considerations for the rendering phase are recorded in
+  `useful_features.md` under `render markdown in the app`.
+- Phase 14 is the first log named `YYYY-MM-DD_subject.md` rather than
+  `YY-MM-DD_phase#-subject.md`, because `AGENTS.md` mandates that convention for new daily logs;
+  the Phase 14 row above is the only one that does not follow the older phase-log pattern.
+  `ROADMAP.md` numbers Flatpak/AppImage as Phase 14 and Markdown notes as Phase 15, while
+  `TASKS.md` still calls the packaging work "Phase 15".
 - Phase 9's `Possible problems` section was stranded at the end of Phase 10 in the old single-file summary; it now sits with Phase 9.
 - The `Refactor: Split MainWindow into a Mixin Package` section of the old summary is superseded by `logs/26-9-25_refactor.md`, which covers the same ground in more detail.

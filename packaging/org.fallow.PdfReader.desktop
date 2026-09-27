@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Fallow PDF Reader
+GenericName=PDF Reader
+Comment=Read PDFs one page at a time, distraction free
+Exec=fallow %U
+Icon=org.fallow.PdfReader
+Terminal=false
+Categories=Office;Viewer;
+MimeType=application/pdf;
+Keywords=PDF;reader;viewer;document;
+StartupNotify=true
+StartupWMClass=org.fallow.PdfReader

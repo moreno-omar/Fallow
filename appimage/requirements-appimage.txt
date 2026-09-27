@@ -1,0 +1,18 @@
+# Runtime dependencies for the AppImage build.
+#
+# It mirrors the repository's requirements.txt, with one deliberate difference:
+#
+#   requirements.txt pins PySide6 (the meta package), which installs both
+#   PySide6-Essentials and PySide6-Addons. The reader only imports QtCore,
+#   QtGui, and QtWidgets - all part of Essentials - so Addons would add roughly
+#   250 MB of Qt modules that are never loaded. The Flatpak gets the same
+#   reduction from BASEAPP_REMOVE_WEBENGINE plus the BaseApp's own cleanup.
+#
+# tomli is left out: it only exists for Python < 3.11 and the bundled runtime is
+# 3.13.
+#
+# Keep the versions here in step with requirements.txt when either is bumped.
+numpy==2.2.6
+pymupdf==1.28.2
+PySide6-Essentials==6.11.2
+shiboken6==6.11.2
