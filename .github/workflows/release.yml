@@ -1,0 +1,186 @@
+name: Release
+
+# Builds the two self-contained packages described in flatpak_appimage_build.md
+# and attaches them to a GitHub Release:
+#
+#   git tag v0.14.0
+#   git push origin v0.14.0
+#
+# The tag's version (without the leading "v") names the AppImage, so the
+# artifact always matches the release it ships with. The same work can be run
+# from the Actions tab with "Run workflow", which asks for the version tag.
+#
+# The two jobs run on different images on purpose. The AppImage is a plain ELF
+# executable, so it is built on the oldest still-supported runner (22.04) to
+# keep its glibc floor low. The Flatpak runs against the KDE runtime rather than
+# the host, so its job can use the newer runner and get a flatpak-builder that
+# is not affected by flatpak#6818.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to build and publish, e.g. v0.14.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Resolve the version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Normalise the requested tag
+        id: tag
+        env:
+          # A tag push carries the tag in github.ref_name; a manual run has only
+          # the input, because github.ref_name is then the branch.
+          REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: |
+          if [[ "${REQUESTED}" == v* ]]; then
+            tag="${REQUESTED}"
+          else
+            tag="v${REQUESTED}"
+          fi
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::${tag} is not a vMAJOR.MINOR.PATCH version tag"
+            exit 1
+          fi
+          echo "version=${tag#v}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "Releasing ${tag}"
+
+  appimage:
+    name: AppImage
+    needs: prepare
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install appimagetool
+        run: |
+          curl -fL --retry 3 -o /tmp/appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          sudo install -m 0755 /tmp/appimagetool /usr/local/bin/appimagetool
+
+      - name: Build the AppImage
+        env:
+          FALLOW_VERSION: ${{ needs.prepare.outputs.version }}
+          # appimagetool is itself an AppImage and FUSE is not guaranteed on a
+          # runner, so let it unpack and run instead of mounting.
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: bash appimage/build-appimage.sh
+
+      # A build that produces a file but cannot import its own Qt is worse than
+      # a failed build, so unpack the image and make it prove it starts.
+      - name: Smoke-test the AppImage
+        run: |
+          image="dist/Fallow-${{ needs.prepare.outputs.version }}-x86_64.AppImage"
+          "./${image}" --appimage-extract >/dev/null
+          squashfs-root/usr/python/bin/python3 -P -c \
+            "import PySide6, pymupdf, numpy; print('bundled interpreters ok')"
+          rm -rf squashfs-root
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: dist/*.AppImage
+          if-no-files-found: error
+
+  flatpak:
+    name: Flatpak
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install flatpak and flatpak-builder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
+
+      - name: Add the Flathub remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub \
+            https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Build the Flatpak
+        run: bash flatpak/build-flatpak.sh
+
+      # The bundle name is fixed inside the build script; releases carry the
+      # version so two downloads cannot be confused for one another.
+      - name: Stage the bundle
+        run: |
+          mkdir -p dist
+          cp build/flatpak/org.fallow.PdfReader.flatpak \
+             "dist/Fallow-${{ needs.prepare.outputs.version }}-x86_64.flatpak"
+
+      - name: Smoke-test the Flatpak
+        run: |
+          flatpak install --user -y --noninteractive \
+            build/flatpak/org.fallow.PdfReader.flatpak
+          flatpak run --command=python3 --env=PYTHONPATH=/app/lib/fallow \
+            --env=QT_QPA_PLATFORM=offscreen \
+            org.fallow.PdfReader -P -c \
+            "import PySide6, pymupdf, numpy; print('bundled interpreters ok')"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: dist/*.flatpak
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    needs: [prepare, appimage, flatpak]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: List the assets
+        run: ls -lh assets
+
+      - name: Create or update the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: Fallow ${{ needs.prepare.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: assets/*
+          body: |
+            Download one of the two packages below. Neither needs Python or a
+            source checkout on the machine that installs it.
+
+            **AppImage** - nothing to install:
+
+            ```bash
+            chmod +x Fallow-${{ needs.prepare.outputs.version }}-x86_64.AppImage
+            ./Fallow-${{ needs.prepare.outputs.version }}-x86_64.AppImage
+            ```
+
+            **Flatpak** - installs for the current user:
+
+            ```bash
+            flatpak install --user -y Fallow-${{ needs.prepare.outputs.version }}-x86_64.flatpak
+            flatpak run org.fallow.PdfReader
+            ```
+
+            Both accept document paths as arguments. See the
+            [build documentation](https://github.com/${{ github.repository }}/blob/main/flatpak_appimage_build.md)
+            for what each package needs at runtime.
