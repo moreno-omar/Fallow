@@ -232,7 +232,7 @@ window by design - use `Ctrl+O` to open a document.
 |---|---|
 | a dependency in `requirements.txt` | `appimage/requirements-appimage.txt`, then rebuild the AppImage |
 | `pymupdf` | regenerate `flatpak/python3-modules.json` (see above), then rebuild the Flatpak |
-| the app version | `VERSION` in `appimage/build-appimage.sh`, the `<release>` in `packaging/org.fallow.PdfReader.metainfo.xml` |
+| the app version | `VERSION` in `appimage/build-appimage.sh`, the `<release>` in `packaging/org.fallow.PdfReader.metainfo.xml`, and the tag (see *Cutting a release*) |
 | PySide6 | nothing for the AppImage beyond `appimage/requirements-appimage.txt`. For the Flatpak you cannot pin PySide6 - it is whatever the BaseApp provides, so bump `base-version` **and** `runtime-version` together, and `RUNTIME_VERSION` in `flatpak/build-flatpak.sh` |
 
 The PySide6 pair has to move together because the BaseApp is built against one
@@ -378,6 +378,36 @@ https://github.com/moreno-omar/Fallow/blob/main/fallow-screenshot.png
 is **wrong**: it returns an HTML page (`content-type: text/html`) that a browser
 happens to render as an image, so a software-centre listing shows nothing.
 Always use `raw.githubusercontent.com` for any image URL in AppStream metadata.
+
+---
+
+## 8. Cutting a release
+
+Releases are built by `.github/workflows/release.yml`, so both packages are
+produced on a clean machine rather than on whatever is in a working copy.
+
+```bash
+# 1. The release notes read the metainfo's <release> entry, so write it first.
+#    Also bump VERSION in appimage/build-appimage.sh.
+# 2. Commit, then tag and push.
+git tag v0.14.0
+git push origin v0.14.0
+```
+
+The tag's version drives everything from there:
+
+- the AppImage job passes it to `build-appimage.sh` as `FALLOW_VERSION`, so the
+  image is named `Fallow-0.14.0-x86_64.AppImage`;
+- the Flatpak job copies its fixed-name bundle to
+  `Fallow-0.14.0-x86_64.flatpak` before uploading;
+- the release job creates or updates the GitHub Release for the tag and
+  attaches both files.
+
+`Actions` → `Release` → `Run workflow` does the same for a version that has no
+tag yet; the workflow creates the tag at the selected commit. The job refuses a
+version that is not `vMAJOR.MINOR.PATCH`, and each job smoke-tests its own
+package - the AppImage unpacks itself and imports its Qt, the Flatpak installs
+and imports the same - before anything is published.
 
 ## References
 

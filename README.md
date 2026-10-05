@@ -56,8 +56,35 @@ A lightweight, distraction-free Linux PDF reader that saves your reading session
 
 ## Install
 
-Two self-contained packages are built from this repository. Neither needs Python
-or a source checkout on the machine that installs it:
+Two self-contained packages are published. Neither needs Python or a source
+checkout on the machine that installs it.
+
+### Download a release
+
+Every tagged release carries both packages, so grab the one you want from the
+[releases page](https://github.com/moreno-omar/Fallow/releases) and replace
+`0.14.0` below with the release you downloaded.
+
+The AppImage needs no installation at all:
+
+```bash
+chmod +x Fallow-0.14.0-x86_64.AppImage
+./Fallow-0.14.0-x86_64.AppImage document.pdf
+```
+
+The Flatpak installs into the current user's Flatpak installation:
+
+```bash
+flatpak install --user -y Fallow-0.14.0-x86_64.flatpak
+flatpak run org.fallow.PdfReader document.pdf
+```
+
+Both accept document paths as arguments, and both start with an empty window the
+first time - open something with `Ctrl+O` or pass it on the command line.
+
+### Build the packages yourself
+
+The same two packages are built by one script each:
 
 ```bash
 bash flatpak/build-flatpak.sh      # -> build/flatpak/org.fallow.PdfReader.flatpak
@@ -71,22 +98,9 @@ AppImage wants `appimagetool`. Both sets of requirements, and the flags behind
 every step, are in [`flatpak_appimage_build.md`](flatpak_appimage_build.md) -
 this README only carries the commands.
 
-The AppImage needs no installation at all:
-
-```bash
-chmod +x dist/Fallow-0.14.0-x86_64.AppImage
-./dist/Fallow-0.14.0-x86_64.AppImage document.pdf
-```
-
-The Flatpak installs into the current user's Flatpak installation:
-
-```bash
-flatpak install --user -y build/flatpak/org.fallow.PdfReader.flatpak
-flatpak run org.fallow.PdfReader document.pdf
-```
-
-Both accept document paths as arguments, and both start with an empty window the
-first time - open something with `Ctrl+O` or pass it on the command line.
+Pushing a `v*` tag runs those same builds in CI and attaches both packages to a
+GitHub Release, so a release is a tag push rather than a local build
+([`.github/workflows/release.yml`](.github/workflows/release.yml)).
 
 ## Quickstart
 

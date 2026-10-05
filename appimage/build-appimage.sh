@@ -8,6 +8,9 @@
 #   chmod +x dist/Fallow-0.14.0-x86_64.AppImage
 #   ./dist/Fallow-0.14.0-x86_64.AppImage /path/to/document.pdf
 #
+# Set FALLOW_VERSION to name the image after a different version; the release
+# workflow uses the git tag so the file matches the release it belongs to.
+#
 # Requires: curl, tar, and appimagetool on PATH. No root access, no Flatpak, and
 # no system Python: the interpreter comes from python-build-standalone and is
 # unpacked straight into the AppDir, so the result does not care which Python,
@@ -19,7 +22,9 @@
 set -euo pipefail
 
 APP_ID="org.fallow.PdfReader"
-VERSION="0.14.0"
+# Overridable so the release workflow can name the image after the git tag
+# (FALLOW_VERSION=0.15.0). Local builds keep the pinned value.
+VERSION="${FALLOW_VERSION:-0.14.0}"
 ARCH="x86_64"
 # Pinned standalone CPython. Any 3.10-3.13 works: PySide6, PyMuPDF, and numpy all
 # publish abi3 wheels. Change both values together; release tags are listed at

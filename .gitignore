@@ -24,7 +24,6 @@ appimage/*.AppImage
 
 .env
 .idea/
-.github/
 .pytest_cache/
 .DS_Store
 __pycache__/

@@ -105,3 +105,6 @@
 
 ## Notes export
 - to allow notes to be taken out of app
+
+## right-click
+- use a context dependent -> always shows subset of actions
