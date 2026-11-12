@@ -56,51 +56,75 @@ A lightweight, distraction-free Linux PDF reader that saves your reading session
 
 ## Install
 
-Two self-contained packages are published. Neither needs Python or a source
-checkout on the machine that installs it.
+Three self-contained packages are published. None of them needs Python, a source
+checkout, or a build step on the machine that installs it.
 
 ### Download a release
 
-Every tagged release carries both packages, so grab the one you want from the
+Every tagged release carries all three packages plus a `SHA256SUMS` file, so grab
+what you want from the
 [releases page](https://github.com/moreno-omar/Fallow/releases) and replace
-`0.14.0` below with the release you downloaded.
+`0.14.1` below with the release you downloaded.
+
+The portable tarball installs for the current user - a menu entry, an icon and a
+`fallow` command, no root needed:
+
+```bash
+# in the folder you downloaded to
+sha256sum -c SHA256SUMS
+
+tar -xzf Fallow-0.14.1-x86_64.tar.gz
+cd Fallow-0.14.1-x86_64
+./install.sh                  # add --prefix /usr/local with sudo for system-wide
+fallow document.pdf
+```
+
+It also runs straight out of the unpacked directory (`./fallow document.pdf`), and
+`~/.local/lib/fallow/uninstall.sh` removes it again while keeping your library,
+bookmarks and notes.
 
 The AppImage needs no installation at all:
 
 ```bash
-chmod +x Fallow-0.14.0-x86_64.AppImage
-./Fallow-0.14.0-x86_64.AppImage document.pdf
+chmod +x Fallow-0.14.1-x86_64.AppImage
+./Fallow-0.14.1-x86_64.AppImage document.pdf
 ```
 
 The Flatpak installs into the current user's Flatpak installation:
 
 ```bash
-flatpak install --user -y Fallow-0.14.0-x86_64.flatpak
+flatpak install --user -y Fallow-0.14.1-x86_64.flatpak
 flatpak run org.fallow.PdfReader document.pdf
 ```
 
-Both accept document paths as arguments, and both start with an empty window the
+All three accept document paths as arguments and start with an empty window the
 first time - open something with `Ctrl+O` or pass it on the command line.
 
 ### Build the packages yourself
 
-The same two packages are built by one script each:
+The same three packages are built by one script each:
 
 ```bash
+bash tarball/build-tarball.sh      # -> dist/Fallow-0.14.1-x86_64.tar.gz
+bash appimage/build-appimage.sh    # -> dist/Fallow-0.14.1-x86_64.AppImage
 bash flatpak/build-flatpak.sh      # -> build/flatpak/org.fallow.PdfReader.flatpak
-bash appimage/build-appimage.sh    # -> dist/Fallow-0.14.0-x86_64.AppImage
 ```
+
+Building the tarball after the AppImage with
+`--payload build/appimage/Fallow.AppDir` reuses the staged payload instead of
+downloading the interpreter and the wheels twice.
 
 The scripts install or download everything they need. Building the Flatpak wants
 `flatpak-builder` and the flathub remote (plus, on Fedora 44 specifically, a
 workaround for a Flatpak bug the script applies on its own); building the
-AppImage wants `appimagetool`. Both sets of requirements, and the flags behind
-every step, are in [`flatpak_appimage_build.md`](flatpak_appimage_build.md) -
-this README only carries the commands.
+AppImage wants `appimagetool`; the tarball needs only `curl` and `tar`. All the
+requirements, and the flags behind every step, are in
+[`flatpak_appimage_build.md`](flatpak_appimage_build.md) - this README only
+carries the commands.
 
-Pushing a `v*` tag runs those same builds in CI and attaches both packages to a
-GitHub Release, so a release is a tag push rather than a local build
-([`.github/workflows/release.yml`](.github/workflows/release.yml)).
+Pushing a `v*` tag runs those same builds in CI and attaches all three packages
+plus `SHA256SUMS` to a GitHub Release, so a release is a tag push rather than a
+local build ([`.github/workflows/release.yml`](.github/workflows/release.yml)).
 
 ## Quickstart
 

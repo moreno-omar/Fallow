@@ -1,16 +1,17 @@
-# Flatpak and AppImage builds
+# Flatpak, AppImage, and tarball builds
 
-Fallow ships two ways so that nobody has to clone the repository and install
-Python to read a PDF. Both are produced by a single script.
+Fallow ships three ways so that nobody has to clone the repository, install
+Python, or run a build to read a PDF. One script produces each package, and the
+AppImage and the tarball are packed from the same staged payload.
 
-| | Flatpak | AppImage |
-|---|---|---|
-| Artifact | `build/flatpak/org.fallow.PdfReader.flatpak` (86 MB) | `dist/Fallow-0.14.0-x86_64.AppImage` (135 MB) |
-| Install | `flatpak install --user <file>` | `chmod +x` and run |
-| Sandboxed | yes | no |
-| What it needs at runtime | `org.kde.Platform//6.11` + `io.qt.PySide.BaseApp//6.11` (its manifest pulls them in) | glibc and the X11/Wayland client libraries |
-| What it needs to build | `flatpak`, `flatpak-builder`, the flathub remote | `curl`, `tar`, `appimagetool` |
-| First build | ~2 min once the runtimes are downloaded | ~2 min once the wheels are downloaded |
+| | Flatpak | AppImage | Portable tarball |
+|---|---|---|---|
+| Artifact | `build/flatpak/org.fallow.PdfReader.flatpak` (86 MB) | `dist/Fallow-0.14.1-x86_64.AppImage` (135 MB) | `dist/Fallow-0.14.1-x86_64.tar.gz` (149 MB) |
+| Install | `flatpak install --user <file>` | `chmod +x` and run | unpack, then `./install.sh` (or run in place) |
+| Sandboxed | yes | no | no |
+| What it needs at runtime | `org.kde.Platform//6.11` + `io.qt.PySide.BaseApp//6.11` (its manifest pulls them in) | glibc and the X11/Wayland client libraries | the same as the AppImage |
+| What it needs to build | `flatpak`, `flatpak-builder`, the flathub remote | `curl`, `tar`, `appimagetool` | `curl`, `tar` |
+| First build | ~2 min once the runtimes are downloaded | ~2 min once the wheels are downloaded | ~2 min alone; seconds when reusing the AppImage's payload |
 
 Everything the builds produce lands in `build/` and `dist/`, both git-ignored.
 
@@ -33,7 +34,8 @@ sudo chmod +x /usr/local/bin/appimagetool
 ```
 
 `appimagetool` needs `mksquashfs` (it bundles it) and `desktop-file-validate`
-(optional, only used for validation warnings).
+(optional, only used for validation warnings). Only the AppImage build needs
+`appimagetool`; the tarball build needs just `curl` and `tar`.
 
 ---
 
@@ -132,20 +134,20 @@ Three flags matter and each one has a reason:
 
 ```bash
 bash appimage/build-appimage.sh
-./dist/Fallow-0.14.0-x86_64.AppImage                          # or: ... /path/to/document.pdf
+./dist/Fallow-0.14.1-x86_64.AppImage                          # or: ... /path/to/document.pdf
 ```
 
 ### What the script does
 
-1. **Creates the AppDir skeleton** under `build/appimage/Fallow.AppDir`.
-2. **Unpacks a standalone CPython** from
+1. **Stages the payload** at `build/appimage/Fallow.AppDir`, through
+   `packaging/stage-payload.sh` - the same function the tarball build calls. It
+   unpacks a standalone CPython from
    [python-build-standalone](https://github.com/astral-sh/python-build-standalone)
-   into `usr/python/`. The download is cached in `build/appimage/cache/`.
-3. **Installs the runtime dependencies** from
-   `appimage/requirements-appimage.txt` into that interpreter.
-4. **Copies** `app/`, `AppRun`, the desktop file, and the icons into place, then
-   deletes every `__pycache__`.
-5. **Runs `appimagetool`** to squash the AppDir into one executable file.
+   into `usr/python/` (the download is cached in `build/cache/`), installs
+   `packaging/requirements-runtime.txt` into that interpreter, copies `app/`,
+   `AppRun`, the desktop file and the icons into place, then deletes every
+   `__pycache__`.
+2. **Runs `appimagetool`** to squash the AppDir into one executable file.
 
 ### Why python-build-standalone
 
@@ -156,8 +158,9 @@ relocatable CPython tarballs whose prefix is derived from the executable's own
 path, which is exactly what an AppImage needs: unpack it, and it works from
 wherever the image is mounted.
 
-The tarball and both version numbers are pinned at the top of
-`appimage/build-appimage.sh`.
+The Python tarball and both version numbers are pinned at the top of
+`packaging/stage-payload.sh`, so the AppImage and the tarball cannot drift onto
+different interpreters.
 
 ### Why PySide6-Essentials and not PySide6
 
@@ -165,23 +168,25 @@ The tarball and both version numbers are pinned at the top of
 `PySide6-Essentials` and `PySide6-Addons`. The reader imports only `QtCore`,
 `QtGui`, and `QtWidgets` - all of them in Essentials. Installing Addons inside a
 distributed image would add roughly 250 MB of Qt modules that are never loaded,
-so `appimage/requirements-appimage.txt` lists `PySide6-Essentials` instead.
+so `packaging/requirements-runtime.txt` lists `PySide6-Essentials` instead.
 
 **Keep those two files in step.** Whenever `requirements.txt` changes, change
-`appimage/requirements-appimage.txt` to match.
+`packaging/requirements-runtime.txt` to match.
 
 ### AppImage files
 
 | Path | Purpose |
 |---|---|
-| `appimage/build-appimage.sh` | the build script |
+| `appimage/build-appimage.sh` | stages the payload, then runs `appimagetool` |
 | `appimage/AppRun` | entry point inside the image; sets `PYTHONPATH`, runs the app |
-| `appimage/requirements-appimage.txt` | runtime dependencies, Essentials instead of full PySide6 |
-| `packaging/` | shared with the Flatpak (see below) |
+| `packaging/stage-payload.sh` | the payload both bundles ship (interpreter, wheels, app) |
+| `packaging/requirements-runtime.txt` | runtime dependencies, Essentials instead of full PySide6 |
+| `packaging/` | branding and metadata shared by all three packages (see below) |
 
 ### Shared files
 
-Both formats describe the same application, so the branding lives in one place:
+All three formats describe the same application, so the branding lives in one
+place:
 
 | Path | Purpose |
 |---|---|
@@ -197,12 +202,85 @@ means editing every one of them together.
 
 `fallow-screenshot.png` at the repository root is the software-centre screenshot.
 It is deliberately **not** copied into `packaging/`: AppStream requires the
-`<image>` to be a web URL, so the file is never installed into either package -
+`<image>` to be a web URL, so the file is never installed into any package -
 the metainfo only points at its published copy.
 
 ---
 
-## 3. The two traps found while packaging
+## 3. Portable tarball
+
+### The short version
+
+```bash
+bash tarball/build-tarball.sh
+tar -xzf dist/Fallow-0.14.1-x86_64.tar.gz
+cd Fallow-0.14.1-x86_64
+./install.sh              # or: ./fallow /path/to/document.pdf, with no install
+```
+
+`--payload build/appimage/Fallow.AppDir` reuses an AppDir that
+`appimage/build-appimage.sh` already staged, so both packages can be produced
+from one download-and-pip pass; the release workflow does exactly that. Without
+it the script stages its own payload and never needs `appimagetool`.
+
+### What the archive contains
+
+```
+Fallow-0.14.0-x86_64/
+├── fallow -> AppRun          launcher; the archive runs in place
+├── install.sh                copies the payload into ~/.local and adds a menu entry
+├── uninstall.sh              removes that install, keeps the library and notes
+├── README.txt                the three commands a downloader needs
+├── AppRun                    entry point, shared with the AppImage
+├── org.fallow.PdfReader.desktop
+├── org.fallow.PdfReader.png
+├── org.fallow.PdfReader.svg
+└── usr/
+    ├── python/               standalone CPython + the wheels
+    └── share/fallow/app/     the application
+```
+
+### What `install.sh` does
+
+| Path | What lands there |
+|---|---|
+| `<prefix>/lib/fallow/` | the whole payload, launcher and uninstaller included |
+| `<prefix>/bin/fallow` | symlink to `<prefix>/lib/fallow/AppRun` |
+| `<prefix>/share/applications/org.fallow.PdfReader.desktop` | menu entry, `Exec=` rewritten to the absolute launcher |
+| `<prefix>/share/icons/hicolor/{256x256,scalable}/apps/` | the icons |
+
+- `--prefix` defaults to `~/.local`, so no root is needed;
+  `sudo ./install.sh --prefix /usr/local` installs system-wide.
+- `AppRun` resolves its own real path, so the symlink in `<prefix>/bin` still
+  finds the bundled interpreter.
+- The desktop entry's `Exec=` is absolute rather than `fallow`, because a desktop
+  session does not necessarily have `~/.local/bin` on `PATH`.
+- Re-running `install.sh` replaces the previous install. It refuses to delete a
+  `<prefix>/lib/fallow` that is not a Fallow install.
+- `uninstall.sh` re-executes itself from a temporary copy, because the last
+  thing it does is delete the directory it lives in.
+
+### Why ship a tarball when there is an AppImage?
+
+The AppImage is the most convenient download, but it is a single opaque file:
+adding a menu entry needs AppImageLauncher, and its contents can only be
+inspected by extracting the image. The tarball is inspectable, installs with a
+script that needs no build tooling, and provides an ordinary `fallow` command
+and menu entry. The AppImage stays the "just run it" option; the tarball is the
+"install it properly" option.
+
+### Tarball files
+
+| Path | Purpose |
+|---|---|
+| `tarball/build-tarball.sh` | stages or reuses the payload and packs the archive |
+| `tarball/install.sh` | user-local (or `--prefix`) installer |
+| `tarball/uninstall.sh` | removes an install, leaves the data alone |
+| `tarball/README.txt` | the instructions placed inside the archive |
+
+---
+
+## 4. The two traps found while packaging
 
 Both were real failures during the first build, not theory. Anything that
 packages this app has to handle them.
@@ -226,14 +304,14 @@ window by design - use `Ctrl+O` to open a document.
 
 ---
 
-## 4. Changing a version
+## 5. Changing a version
 
 | You changed | Also update |
 |---|---|
-| a dependency in `requirements.txt` | `appimage/requirements-appimage.txt`, then rebuild the AppImage |
+| a dependency in `requirements.txt` | `packaging/requirements-runtime.txt`, then rebuild the AppImage and the tarball |
 | `pymupdf` | regenerate `flatpak/python3-modules.json` (see above), then rebuild the Flatpak |
-| the app version | `VERSION` in `appimage/build-appimage.sh`, the `<release>` in `packaging/org.fallow.PdfReader.metainfo.xml`, and the tag (see *Cutting a release*) |
-| PySide6 | nothing for the AppImage beyond `appimage/requirements-appimage.txt`. For the Flatpak you cannot pin PySide6 - it is whatever the BaseApp provides, so bump `base-version` **and** `runtime-version` together, and `RUNTIME_VERSION` in `flatpak/build-flatpak.sh` |
+| the app version | `VERSION` in `appimage/build-appimage.sh` and `tarball/build-tarball.sh`, the `<release>` in `packaging/org.fallow.PdfReader.metainfo.xml`, and the tag (see *Cutting a release*) |
+| PySide6 | nothing for the AppImage or the tarball beyond `packaging/requirements-runtime.txt`. For the Flatpak you cannot pin PySide6 - it is whatever the BaseApp provides, so bump `base-version` **and** `runtime-version` together, and `RUNTIME_VERSION` in `flatpak/build-flatpak.sh` |
 
 The PySide6 pair has to move together because the BaseApp is built against one
 runtime branch; mixing them gives Qt libraries that do not match the runtime's
@@ -241,7 +319,7 @@ own.
 
 ---
 
-## 5. Troubleshooting
+## 6. Troubleshooting
 
 ### `error: lsetxattr(security.selinux): Operation not supported`
 
@@ -308,7 +386,7 @@ If it does not appear, check that the directory is on `XDG_DATA_DIRS`, or run
 
 ---
 
-## 6. What was verified
+## 7. What was verified
 
 Both packages were built and exercised on Fedora 44 (KDE, Wayland, SELinux
 enforcing). Checks and results:
@@ -317,8 +395,13 @@ enforcing). Checks and results:
 |---|---|
 | Flatpak build | `build/flatpak/org.fallow.PdfReader.flatpak`, 86 MB |
 | AppImage build | `dist/Fallow-0.14.0-x86_64.AppImage`, 135 MB |
+| Tarball build | `dist/Fallow-0.14.0-x86_64.tar.gz`, 149 MB, built both from its own payload and with `--payload` |
 | Bundled versions, Flatpak | PyMuPDF 1.28.2, PySide6 6.11.2, numpy 2.3.5 (numpy from the BaseApp) |
-| Bundled versions, AppImage | PyMuPDF 1.28.2, PySide6 6.11.2, numpy 2.2.6 |
+| Bundled versions, AppImage and tarball | PyMuPDF 1.28.2, PySide6 6.11.2, numpy 2.2.6 |
+| Tarball payload equals the checkout | `diff -r app <bundle>/usr/share/fallow/app` shows no differences |
+| Tarball install into a temporary prefix | launcher linked to `<prefix>/lib/fallow/AppRun`, desktop `Exec=` absolute, both icons installed |
+| Tarball launch, installed and in place | window runs until killed (offscreen, 10 s timeout), no traceback |
+| Tarball uninstall | launcher, desktop entry, icons and payload removed; a second run reports nothing to do |
 | First launch, clean profile, no arguments | empty window, no traceback, session written with `"tabs": []` |
 | Launch with a PDF argument | one tab, 277 pages, page bar shows `of 277` |
 | Page turning and zoom inside the package | `next_page()` -> page 1, `zoom_in()` -> 1.15 |
@@ -340,6 +423,13 @@ flatpak run --env=QT_QPA_PLATFORM=offscreen org.fallow.PdfReader /path/to/doc.pd
 bash appimage/build-appimage.sh
 QT_QPA_PLATFORM=offscreen ./dist/Fallow-0.14.0-x86_64.AppImage /path/to/doc.pdf
 
+# Tarball (standalone, or --payload build/appimage/Fallow.AppDir)
+bash tarball/build-tarball.sh
+tar -xzf dist/Fallow-0.14.0-x86_64.tar.gz -C /tmp
+/tmp/Fallow-0.14.0-x86_64/install.sh --prefix /tmp/fallow-prefix
+QT_QPA_PLATFORM=offscreen timeout 10 /tmp/fallow-prefix/bin/fallow   # 124 = it stayed up
+/tmp/fallow-prefix/lib/fallow/uninstall.sh --prefix /tmp/fallow-prefix
+
 # Validate the shared assets
 desktop-file-validate packaging/org.fallow.PdfReader.desktop
 appstreamcli validate --no-net packaging/org.fallow.PdfReader.metainfo.xml
@@ -347,7 +437,7 @@ appstreamcli validate --no-net packaging/org.fallow.PdfReader.metainfo.xml
 
 ---
 
-## 7. Before publishing
+## 8. Before publishing
 
 The metadata is finished: `appstreamcli validate` passes with no errors and no
 warnings, the screenshot and homepage URLs are live, and the `GPL-3.0-only`
@@ -381,33 +471,36 @@ Always use `raw.githubusercontent.com` for any image URL in AppStream metadata.
 
 ---
 
-## 8. Cutting a release
+## 9. Cutting a release
 
-Releases are built by `.github/workflows/release.yml`, so both packages are
+Releases are built by `.github/workflows/release.yml`, so all three packages are
 produced on a clean machine rather than on whatever is in a working copy.
 
 ```bash
 # 1. The release notes read the metainfo's <release> entry, so write it first.
-#    Also bump VERSION in appimage/build-appimage.sh.
+#    Also bump VERSION in appimage/build-appimage.sh and tarball/build-tarball.sh.
 # 2. Commit, then tag and push.
-git tag v0.14.0
-git push origin v0.14.0
+git tag v0.14.1
+git push origin v0.14.1
 ```
 
 The tag's version drives everything from there:
 
-- the AppImage job passes it to `build-appimage.sh` as `FALLOW_VERSION`, so the
-  image is named `Fallow-0.14.0-x86_64.AppImage`;
+- the bundle job passes it to `build-appimage.sh` as `FALLOW_VERSION`, so the
+  image is named `Fallow-0.14.1-x86_64.AppImage`;
+- the same job passes it to `build-tarball.sh --payload`, which packs the AppDir
+  it just staged into `Fallow-0.14.1-x86_64.tar.gz`;
 - the Flatpak job copies its fixed-name bundle to
   `Fallow-0.14.0-x86_64.flatpak` before uploading;
-- the release job creates or updates the GitHub Release for the tag and
-  attaches both files.
+- the release job writes `SHA256SUMS`, creates or updates the GitHub Release for
+  the tag, and attaches all four files.
 
 `Actions` → `Release` → `Run workflow` does the same for a version that has no
 tag yet; the workflow creates the tag at the selected commit. The job refuses a
 version that is not `vMAJOR.MINOR.PATCH`, and each job smoke-tests its own
-package - the AppImage unpacks itself and imports its Qt, the Flatpak installs
-and imports the same - before anything is published.
+package before anything is published - the AppImage unpacks itself and imports
+its Qt, the tarball installs into a throwaway prefix and imports the app from
+there, and the Flatpak installs and imports the same.
 
 ## References
 
