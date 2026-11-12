@@ -124,3 +124,58 @@ Flatpak installation were both deleted afterwards; `dist/` holds only
   reproducible bit-for-bit.
 - Releases are unsigned: there is no GPG signature on the AppImage or the tag,
   so a download cannot be verified beyond the transport.
+
+---
+
+## 19:48 — Tagged v0.14.0 (release run blocked by a GitHub outage)
+
+**Objective.** Turn the merged pipeline into an actual published release.
+
+**Solution.** `development` and `main` had diverged (main carried the PR merge
+commits), so `main` was updated by merging PR #5 (`e80572e`); that put
+`.github/workflows/release.yml` on the default branch, which is also what makes
+the "Run workflow" button appear. An annotated `v0.14.0` tag was then created on
+that commit and pushed, which is the trigger the workflow waits for.
+
+**Actions Performed.**
+1. Confirmed the merge landed the workflow on `main`
+   (`git ls-tree -r --name-only origin/main | grep .github`).
+2. Tagged the merge commit: `git tag -a v0.14.0 e80572e -m "Fallow 0.14.0"`.
+3. Pushed the tag: `git push origin v0.14.0`.
+4. Checked the run with the GitHub API: the `Release` workflow is registered and
+   `active`, and run #1 was created for the tag.
+5. Found the job stuck in `queued` for ~15 minutes and traced it to a GitHub
+   incident rather than the workflow.
+
+**Verification Output.**
+
+```
+$ git push origin v0.14.0
+ * [new tag]         v0.14.0 -> v0.14.0
+
+run #1  id=37365807185  event=push  head_branch=v0.14.0  status=queued
+job     id=111950543003 name="Resolve the version" labels=[ubuntu-latest]
+
+$ curl https://www.githubstatus.com/api/v2/components.json
+Actions status: degraded_performance      # "Partially Degraded Service"
+```
+
+**References Used.**
+
+1. https://www.githubstatus.com/api/v2/components.json — the component feed that
+   showed `Actions` as degraded while the job stayed queued.
+2. https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#push
+   — the tag trigger, and why a tag push runs even though it is not on a branch.
+3. https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs
+   — re-running a queued or failed run once capacity returns.
+
+**Optional steps.** Re-run the job from the run page once Actions reports
+operational. Add a `workflow_dispatch` dry-run input that builds and uploads the
+artifacts without creating a release, so a runner breakage is found without
+consuming a version number.
+
+**Possible problems.** The first run is still unproven: the Flatpak job downloads
+the KDE runtime, SDK and BaseApp (several GB) with no cache, and the AppImage job
+is the first use of `appimage/build-appimage.sh` on `ubuntu-22.04`. Either may
+need a follow-up commit. Until run #1 completes, the `v0.14.0` tag exists with no
+release and no assets behind it.
