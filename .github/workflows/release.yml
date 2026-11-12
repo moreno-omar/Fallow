@@ -1,20 +1,22 @@
 name: Release
 
-# Builds the two self-contained packages described in flatpak_appimage_build.md
+# Builds the three downloadable packages described in flatpak_appimage_build.md
 # and attaches them to a GitHub Release:
 #
-#   git tag v0.14.0
-#   git push origin v0.14.0
+#   git tag v0.14.1
+#   git push origin v0.14.1
 #
-# The tag's version (without the leading "v") names the AppImage, so the
-# artifact always matches the release it ships with. The same work can be run
-# from the Actions tab with "Run workflow", which asks for the version tag.
+# The tag's version (without the leading "v") names the AppImage and the
+# tarball, so the artifacts always match the release they ship with. The same
+# work can be run from the Actions tab with "Run workflow", which asks for the
+# version tag.
 #
-# The two jobs run on different images on purpose. The AppImage is a plain ELF
-# executable, so it is built on the oldest still-supported runner (22.04) to
-# keep its glibc floor low. The Flatpak runs against the KDE runtime rather than
-# the host, so its job can use the newer runner and get a flatpak-builder that
-# is not affected by flatpak#6818.
+# The jobs run on different images on purpose. The AppImage and the tarball are
+# plain files that run against the host's libraries, so they are built on the
+# oldest still-supported runner (22.04) to keep the glibc floor low; both are
+# built in one job so they share a single staged payload. The Flatpak runs
+# against the KDE runtime rather than the host, so its job can use the newer
+# runner and get a flatpak-builder that is not affected by flatpak#6818.
 
 on:
   push:
@@ -23,7 +25,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag to build and publish, e.g. v0.14.0"
+        description: "Version tag to build and publish, e.g. v0.14.1"
         required: true
         type: string
 
@@ -62,8 +64,8 @@ jobs:
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
           echo "Releasing ${tag}"
 
-  appimage:
-    name: AppImage
+  bundles:
+    name: AppImage and portable tarball
     needs: prepare
     runs-on: ubuntu-22.04
     steps:
@@ -93,10 +95,40 @@ jobs:
             "import PySide6, pymupdf, numpy; print('bundled interpreters ok')"
           rm -rf squashfs-root
 
+      # The tarball carries the same payload, so it reuses the AppDir instead of
+      # downloading the interpreter and the wheels a second time.
+      - name: Build the portable tarball
+        env:
+          FALLOW_VERSION: ${{ needs.prepare.outputs.version }}
+        run: bash tarball/build-tarball.sh --payload build/appimage/Fallow.AppDir
+
+      # Install it the way a reader would - unpack, run install.sh - and check
+      # that the menu entry and the bundled interpreter came out usable.
+      - name: Smoke-test the tarball
+        run: |
+          version="${{ needs.prepare.outputs.version }}"
+          work="$(mktemp -d)"
+          tar -xzf "dist/Fallow-${version}-x86_64.tar.gz" -C "${work}"
+          bundle="${work}/Fallow-${version}-x86_64"
+
+          "${bundle}/install.sh" --prefix "${work}/prefix"
+          install_dir="${work}/prefix/lib/fallow"
+          grep -q "Exec=\"${work}/prefix/bin/fallow\"" \
+            "${work}/prefix/share/applications/org.fallow.PdfReader.desktop"
+          PYTHONPATH="${install_dir}/usr/share/fallow" \
+            "${install_dir}/usr/python/bin/python3" -P -c \
+            "import app.main, PySide6, pymupdf, numpy; print('packaged application ok')"
+
+          "${install_dir}/uninstall.sh" --prefix "${work}/prefix"
+          test ! -e "${install_dir}"
+          rm -rf "${work}"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: appimage
-          path: dist/*.AppImage
+          name: linux-bundles
+          path: |
+            dist/*.AppImage
+            dist/*.tar.gz
           if-no-files-found: error
 
   flatpak:
@@ -144,13 +176,21 @@ jobs:
 
   release:
     name: Publish the release
-    needs: [prepare, appimage, flatpak]
+    needs: [prepare, bundles, flatpak]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: assets
           merge-multiple: true
+
+      # A download can be checked against this file, so a truncated or swapped
+      # artifact is caught rather than trusted.
+      - name: Write the checksums
+        working-directory: assets
+        run: |
+          sha256sum Fallow-*.AppImage Fallow-*.flatpak Fallow-*.tar.gz > SHA256SUMS
+          cat SHA256SUMS
 
       - name: List the assets
         run: ls -lh assets
@@ -164,8 +204,17 @@ jobs:
           fail_on_unmatched_files: true
           files: assets/*
           body: |
-            Download one of the two packages below. Neither needs Python or a
-            source checkout on the machine that installs it.
+            Download one of the three packages below. None of them needs Python
+            or a source checkout on the machine that installs it.
+
+            **Portable tarball** - unpack and install, or just run it in place:
+
+            ```bash
+            tar -xzf Fallow-${{ needs.prepare.outputs.version }}-x86_64.tar.gz
+            cd Fallow-${{ needs.prepare.outputs.version }}-x86_64
+            ./install.sh              # into ~/.local, no root needed
+            fallow document.pdf
+            ```
 
             **AppImage** - nothing to install:
 
@@ -181,6 +230,12 @@ jobs:
             flatpak run org.fallow.PdfReader
             ```
 
-            Both accept document paths as arguments. See the
+            All three accept document paths as arguments. To check a download:
+
+            ```bash
+            sha256sum -c SHA256SUMS
+            ```
+
+            See the
             [build documentation](https://github.com/${{ github.repository }}/blob/main/flatpak_appimage_build.md)
             for what each package needs at runtime.
