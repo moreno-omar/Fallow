@@ -6,7 +6,7 @@ AppImage and the tarball are packed from the same staged payload.
 
 | | Flatpak | AppImage | Portable tarball |
 |---|---|---|---|
-| Artifact | `build/flatpak/org.fallow.PdfReader.flatpak` (86 MB) | `dist/Fallow-0.14.1-x86_64.AppImage` (135 MB) | `dist/Fallow-0.14.1-x86_64.tar.gz` (149 MB) |
+| Artifact | `build/flatpak/org.fallow.PdfReader.flatpak` (86 MB) | `dist/Fallow-0.14.2-x86_64.AppImage` (135 MB) | `dist/Fallow-0.14.2-x86_64.tar.gz` (149 MB) |
 | Install | `flatpak install --user <file>` | `chmod +x` and run | unpack, then `./install.sh` (or run in place) |
 | Sandboxed | yes | no | no |
 | What it needs at runtime | `org.kde.Platform//6.11` + `io.qt.PySide.BaseApp//6.11` (its manifest pulls them in) | glibc and the X11/Wayland client libraries | the same as the AppImage |
@@ -36,6 +36,13 @@ sudo chmod +x /usr/local/bin/appimagetool
 `appimagetool` needs `mksquashfs` (it bundles it) and `desktop-file-validate`
 (optional, only used for validation warnings). Only the AppImage build needs
 `appimagetool`; the tarball build needs just `curl` and `tar`.
+
+For the Flatpak, distro matters more than it should. Fedora's stack works as
+shipped; **Ubuntu 24.04's does not**: its AppStream 1.0.2 fails
+`flatpak-builder`'s compose step with `file-read-error` (see *Troubleshooting*),
+and its image has no `eu-strip`. That is why the Flatpak job is non-blocking in
+CI for now: a release ships the AppImage and the tarball while the Flatpak's
+build environment is repaired, and the release body lists only what was built.
 
 ---
 
@@ -134,7 +141,7 @@ Three flags matter and each one has a reason:
 
 ```bash
 bash appimage/build-appimage.sh
-./dist/Fallow-0.14.1-x86_64.AppImage                          # or: ... /path/to/document.pdf
+./dist/Fallow-0.14.2-x86_64.AppImage                          # or: ... /path/to/document.pdf
 ```
 
 ### What the script does
@@ -213,8 +220,8 @@ the metainfo only points at its published copy.
 
 ```bash
 bash tarball/build-tarball.sh
-tar -xzf dist/Fallow-0.14.1-x86_64.tar.gz
-cd Fallow-0.14.1-x86_64
+tar -xzf dist/Fallow-0.14.2-x86_64.tar.gz
+cd Fallow-0.14.2-x86_64
 ./install.sh              # or: ./fallow /path/to/document.pdf, with no install
 ```
 
@@ -320,6 +327,40 @@ own.
 ---
 
 ## 6. Troubleshooting
+
+### `flatpak-builder` fails with `Failed to execute child process 'eu-strip'`
+
+`flatpak-builder` splits debug info with `eu-strip`, which Ubuntu images do not
+install with the package. Install `elfutils` alongside `flatpak-builder`:
+
+```bash
+sudo apt-get install -y flatpak-builder elfutils
+```
+
+### `appstreamcli compose failed: file-read-error`
+
+Seen on Ubuntu 24.04 (AppStream 1.0.2) at the end of a Flatpak build, after
+everything has compiled:
+
+```
+Running appstreamcli compose
+Run failed, some data was ignored.
+  E: file-read-error
+  E: filters-but-no-output
+Error: ERROR: appstreamcli compose failed: Child process exited with code 1
+```
+
+The same compose command succeeds on AppStream 1.1 (Fedora 44) with the same
+metadata, so it is the distro's AppStream, not the package: 1.0.2 mis-resolves
+the unit paths when `flatpak-builder` passes `--prefix=/`. Build the Flatpak on a
+host with AppStream 1.1 or newer - CI runs Fedora in a container for exactly this
+reason.
+
+### `error: ... is not a valid icon: Format not recognized`
+
+`flatpak build-export` validates icons with gdk-pixbuf. A minimal Ubuntu
+container has no SVG loader, so the scalable icon fails to parse; install
+`librsvg2-common` (or export from a machine that has it).
 
 ### `error: lsetxattr(security.selinux): Operation not supported`
 
@@ -480,18 +521,20 @@ produced on a clean machine rather than on whatever is in a working copy.
 # 1. The release notes read the metainfo's <release> entry, so write it first.
 #    Also bump VERSION in appimage/build-appimage.sh and tarball/build-tarball.sh.
 # 2. Commit, then tag and push.
-git tag v0.14.1
-git push origin v0.14.1
+git tag v0.14.2
+git push origin v0.14.2
 ```
 
 The tag's version drives everything from there:
 
 - the bundle job passes it to `build-appimage.sh` as `FALLOW_VERSION`, so the
-  image is named `Fallow-0.14.1-x86_64.AppImage`;
+  image is named `Fallow-0.14.2-x86_64.AppImage`;
 - the same job passes it to `build-tarball.sh --payload`, which packs the AppDir
-  it just staged into `Fallow-0.14.1-x86_64.tar.gz`;
-- the Flatpak job copies its fixed-name bundle to
-  `Fallow-0.14.0-x86_64.flatpak` before uploading;
+  it just staged into `Fallow-0.14.2-x86_64.tar.gz`;
+- the Flatpak job builds and smoke-tests the Flatpak and copies the fixed-name
+  bundle to `Fallow-0.14.2-x86_64.flatpak`. It is non-blocking while Ubuntu
+  24.04's AppStream cannot compose the metadata; when it succeeds the release
+  carries the third package;
 - the release job writes `SHA256SUMS`, creates or updates the GitHub Release for
   the tag, and attaches all four files.
 

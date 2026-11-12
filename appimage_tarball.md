@@ -98,9 +98,14 @@ bash tarball/build-tarball.sh --payload build/appimage/Fallow.AppDir
 
 1. `bundles` builds the AppImage, then the tarball from the same AppDir, and
    smoke-tests both (unpack, install into a throwaway prefix, import the app);
-2. `flatpak` builds and smoke-tests the Flatpak;
-3. `release` writes `SHA256SUMS` and attaches the AppImage, the tarball, the
-   Flatpak and the checksums to the GitHub Release.
+2. `flatpak` builds and smoke-tests the Flatpak. It is deliberately
+   non-blocking: Ubuntu 24.04's AppStream 1.0.2 fails `flatpak-builder`'s compose
+   step with `file-read-error` (the same command succeeds on AppStream 1.1), and
+   the image has no `eu-strip`, so the job is red until it runs somewhere newer -
+   without stopping the AppImage and the tarball;
+3. `release` writes `SHA256SUMS`, generates the release body from the assets
+   that actually built, and attaches them plus the checksums to the GitHub
+   Release.
 
 A reader downloads one file, verifies it with `sha256sum -c SHA256SUMS`, and
 installs it.

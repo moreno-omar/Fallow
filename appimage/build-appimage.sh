@@ -3,10 +3,10 @@
 #
 #   appimage/build-appimage.sh
 #
-# Produces dist/Fallow-0.14.1-x86_64.AppImage - a single self-contained file:
+# Produces dist/Fallow-0.14.2-x86_64.AppImage - a single self-contained file:
 #
-#   chmod +x dist/Fallow-0.14.1-x86_64.AppImage
-#   ./dist/Fallow-0.14.1-x86_64.AppImage /path/to/document.pdf
+#   chmod +x dist/Fallow-0.14.2-x86_64.AppImage
+#   ./dist/Fallow-0.14.2-x86_64.AppImage /path/to/document.pdf
 #
 # Set FALLOW_VERSION to name the image after a different version; the release
 # workflow uses the git tag so the file matches the release it belongs to.
@@ -31,7 +31,7 @@ source "${SCRIPT_DIR}/../packaging/stage-payload.sh"
 
 # Overridable so the release workflow can name the image after the git tag
 # (FALLOW_VERSION=0.15.0). Local builds keep the pinned value.
-VERSION="${FALLOW_VERSION:-0.14.1}"
+VERSION="${FALLOW_VERSION:-0.14.2}"
 
 APPDIR="${FALLOW_ROOT}/build/appimage/Fallow.AppDir"
 DIST_DIR="${FALLOW_ROOT}/dist"
