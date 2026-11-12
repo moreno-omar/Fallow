@@ -168,3 +168,113 @@ The temporary prefixes, the extracted archives and the scratch
 - `install.sh` and `uninstall.sh` assume a POSIX host (they use `readlink -f`,
   `cp -a`, GNU-ish `install`); fine for the supported Linux-only target, but it
   would need work before any broader packaging.
+
+---
+
+## 17:01 — The v0.14.1 release run failed; fixing the CI, cutting v0.14.2
+
+**Objective.** Publish the tags' release. The run for `v0.14.1` failed in both
+build jobs and the release job was skipped, so the tag existed with no assets.
+
+**Solution.** Three separate environment gaps, each reproduced in a container
+that matches the runner:
+
+1. **The tarball smoke test** imported `app.main`, i.e. `PySide6.QtWidgets`, on a
+   bare runner. Reproduced in `ubuntu:22.04`:
+   `ImportError: libGL.so.1: cannot open shared object file`. The packaging was
+   fine - the runner has no desktop libraries. The job now installs
+   `libgl1 libegl1 libxkbcommon0 libglib2.0-0 libfontconfig1 libdbus-1-3`
+   and the remaining X libraries before the import.
+2. **The Flatpak build** died in `flatpak-builder` with
+   `Failed to execute child process 'eu-strip'`: `eu-strip` (elfutils) is not in
+   the Ubuntu image. The job installs `elfutils` now.
+3. **After that**, `appstreamcli compose` failed with `file-read-error` and
+   `filters-but-no-output`. Reproduced with a *minimal* metainfo, so it is not
+   this app's data: Ubuntu 24.04 ships AppStream 1.0.2, which mis-resolves the
+   unit paths when `flatpak-builder` passes `--prefix=/`; the identical command
+   on Fedora's AppStream 1.1.3 prints `Success!`. Ubuntu has no newer package.
+
+   A `fedora:44` container was tried for the Flatpak job, but this machine cannot
+   run Flatpak's FUSE/rofiles path (`fusermount3: mount failed: Operation not
+   permitted`, and `btrfs`+`podman` produced `Invalid cross-device link` during
+   locale migration), so that variant could not be verified here. Since the
+   Flatpak has never shipped and the task is the tarball/AppImage, the Flatpak
+   job is now `continue-on-error: true`: it still runs and reports, but cannot
+   hold back the packages that do build. Documented in the build guide's
+   troubleshooting section.
+
+The release job now tolerates an absent Flatpak and generates the release body
+from the assets that actually arrived, so a release never advertises a package
+it does not carry. Version bumped to 0.14.2 (0.14.1 was tagged but never
+released).
+
+**Actions Performed.**
+
+1. Read the failed run's check-runs through the public API (job logs need a
+   token): both build jobs failed, release skipped.
+2. Reproduced the tarball failure and the fix in `ubuntu:22.04` with podman;
+   verified the smoke-test commands again against the packaged archive.
+3. Reproduced the Flatpak failures in `ubuntu:24.04` (eu-strip, then AppStream)
+   and isolated the AppStream failure with a minimal metainfo and with
+   Fedora 1.1.3 as the control.
+4. Added the desktop-library step, `elfutils`, `continue-on-error` for the
+   Flatpak job, and the generated release body/checksums.
+5. Bumped the version to 0.14.2 in the scripts, metainfo, README and workflow.
+
+**Verification Output.**
+
+```
+$ podman run ... ubuntu:22.04 ... import app.main
+ImportError: libGL.so.1: cannot open shared object file: No such file or directory
+
+$ podman run ... ubuntu:22.04 ... apt-get install libgl1 libegl1 libxkbcommon0 ...
+packaged application ok
+launch exit=124                          # offscreen window stayed up
+
+$ podman run ... ubuntu:24.04 ... bash flatpak/build-flatpak.sh
+Error: module python3-pymupdf: Failed to execute child process ?eu-strip? (No such file or directory)
+
+$ ... after installing elfutils
+Running appstreamcli compose
+  E: file-read-error
+  E: filters-but-no-output
+
+$ appstreamcli compose --prefix=/ ... (same command, Fedora host, AppStream 1.1.3)
+Success!
+
+$ shellcheck -x <five scripts>
+exit=0
+$ actionlint .github/workflows/release.yml
+exit=0
+```
+
+**References Used.**
+
+1. flatpak-builder command reference (build flags used while isolating the
+   locale/rofiles behaviour):
+   <https://docs.flatpak.org/en/latest/flatpak-builder-command-reference.html>
+2. AppStream release history - the 1.0.2 → 1.1 change that fixed compose's
+   path handling: <https://github.com/ximion/appstream/releases>
+3. GitHub Actions `jobs.<job_id>.continue-on-error`:
+   <https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error>
+
+**Optional steps.**
+
+- Give the Flatpak job a working environment (Fedora container with
+  `--privileged`, or a newer AppStream on the runner) and drop
+  `continue-on-error`, so releases carry the third package again.
+- Add a `workflow_dispatch` dry-run input that builds without publishing, so a
+  runner gap is found without consuming a version number.
+- Cache the AppImage/tarball payload between the two build steps (already shared)
+  and the Fedora `dnf` layer, if the Flatpak job moves to a container.
+
+**Possible problems.**
+
+- The Flatpak job is still red on every release; the release body simply leaves
+  it out. That is visible in Actions but silent on the release page.
+- The AppStream workaround is not in place: `ubuntu-24.04` is still the runner,
+  so the job fails at compose until it moves.
+- `fedora:44` may not be the stable container tag at the time the Flatpak job is
+  fixed; pin whatever tag is current then.
+- The `v0.14.1` tag exists with no release behind it. Removing it is a remote tag
+  deletion and was not done without asking.
