@@ -549,3 +549,61 @@ tarball interpreters ok
 - `v0.14.0`'s empty release is still visible on the releases page.
 - The release body is generated from globs; renaming an asset means editing both
   the workflow and the globs in `release.yml` together.
+
+---
+
+## 18:46 — Runner image decided: stay on Fedora
+
+**Objective.** Check whether a smaller base image (Alpine was suggested) would
+make the Flatpak job cheaper, and close out the packaging work.
+
+**Measurements.**
+
+- Run 43336456497: `Flatpak` 5.2 min, `AppImage and portable tarball` 1.0 min,
+  `Publish the release` 0.5 min, `Resolve the version` 0.1 min.
+- Installed runtime sizes on this host: `org.kde.Platform/x86_64/6.11` 1.1 GB,
+  `org.kde.Sdk/x86_64/6.11` 3.2 GB, plus `io.qt.PySide.BaseApp//6.11` (~1 GB);
+  those come from Flathub on every run and are independent of the build image.
+- Base images: `fedora:44` 191 MB uncompressed (~70 MB pulled), `alpine` a few
+  megabytes. The image is roughly 1% of what the job downloads.
+
+**Findings.** Alpine edge does carry the pieces (`flatpak-builder` 1.4.12,
+`appstream` 1.2.1, `bubblewrap` in main, `flatpak` in community), so it is not
+impossible - unlike Ubuntu 24.04, whose AppStream 1.0.2 cannot compose the
+metadata. But it would save ~60 MB out of ~4.5 GB, buys no time on the SDK
+download or the build, and puts Flatpak's `bwrap`/ostree path on musl, where it
+is far less exercised. The real lever would be caching
+`~/.local/share/flatpak` (and the dnf layer) with `actions/cache`, worth roughly
+three minutes per run after the first.
+
+**Decision.** Keep `fedora:44`. Caching was offered and explicitly deferred
+("no. that's fine. we'll stick with fedora then."), so the workflow is unchanged
+and the job keeps downloading its runtimes per release.
+
+**Final state.**
+
+| Item | State |
+|---|---|
+| Release | `v0.14.3`, published 2026-11-13T00:27:35Z |
+| Assets | AppImage 141 MB, tarball 156 MB, Flatpak 90 MB, `SHA256SUMS` |
+| Jobs | all four green, no `continue-on-error` |
+| Tags | `v0.14.0`, `v0.14.2`, `v0.14.3` (`v0.14.1` removed) |
+| Working tree | clean apart from the untracked `.codewhale/` agent state |
+| Branches | `main` and `development` both at `4598858` |
+
+**Verification.** The downloaded 0.14.3 assets were checked with
+`sha256sum -c SHA256SUMS` (all OK); the Flatpak was installed into a throwaway
+`FLATPAK_USER_DIR`, reported `Version: 0.14.3`, and ran its bundled interpreter
+(`flatpak bundled interpreters ok`, exit 0); the tarball was installed into a
+temporary prefix, launched offscreen (exit 124, i.e. it stayed up) and its
+interpreter imported PySide6 6.11.2, PyMuPDF 1.28.2 and numpy 2.2.6.
+
+**Remaining.**
+
+- The empty `v0.14.0` release is still on the releases page; deleting it needs
+  the web UI or an authenticated API call, after which its tag can go too.
+- The Flatpak job downloads the Fedora image and ~4.5 GB of runtimes on every
+  tag (about five minutes per release). Caching is the obvious next step if the
+  wait becomes annoying.
+- Releases are still unsigned; `SHA256SUMS` proves the download is intact, not
+  who built it.
