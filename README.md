@@ -56,18 +56,15 @@ A lightweight, distraction-free Linux PDF reader that saves your reading session
 
 ## Install
 
-Fallow is packaged three ways - a portable tarball, an AppImage, and a Flatpak.
-Every release carries the tarball and the AppImage; the Flatpak is built by the
-same pipeline and is attached when its build succeeds, which its CI environment
-does not yet allow. None of them needs Python, a source checkout, or a build step
-on the machine that installs it.
+Three self-contained packages are published. None of them needs Python, a source
+checkout, or a build step on the machine that installs it.
 
 ### Download a release
 
 Every tagged release carries all three packages plus a `SHA256SUMS` file, so grab
 what you want from the
 [releases page](https://github.com/moreno-omar/Fallow/releases) and replace
-`0.14.2` below with the release you downloaded.
+`0.14.3` below with the release you downloaded.
 
 The portable tarball installs for the current user - a menu entry, an icon and a
 `fallow` command, no root needed:
@@ -76,8 +73,8 @@ The portable tarball installs for the current user - a menu entry, an icon and a
 # in the folder you downloaded to
 sha256sum -c SHA256SUMS
 
-tar -xzf Fallow-0.14.2-x86_64.tar.gz
-cd Fallow-0.14.2-x86_64
+tar -xzf Fallow-0.14.3-x86_64.tar.gz
+cd Fallow-0.14.3-x86_64
 ./install.sh                  # add --prefix /usr/local with sudo for system-wide
 fallow document.pdf
 ```
@@ -89,15 +86,14 @@ bookmarks and notes.
 The AppImage needs no installation at all:
 
 ```bash
-chmod +x Fallow-0.14.2-x86_64.AppImage
-./Fallow-0.14.2-x86_64.AppImage document.pdf
+chmod +x Fallow-0.14.3-x86_64.AppImage
+./Fallow-0.14.3-x86_64.AppImage document.pdf
 ```
 
-The Flatpak, when a release includes it, installs into the current user's
-Flatpak installation:
+The Flatpak installs into the current user's Flatpak installation:
 
 ```bash
-flatpak install --user -y Fallow-0.14.2-x86_64.flatpak
+flatpak install --user -y Fallow-0.14.3-x86_64.flatpak
 flatpak run org.fallow.PdfReader document.pdf
 ```
 
@@ -109,8 +105,8 @@ first time - open something with `Ctrl+O` or pass it on the command line.
 The same three packages are built by one script each:
 
 ```bash
-bash tarball/build-tarball.sh      # -> dist/Fallow-0.14.2-x86_64.tar.gz
-bash appimage/build-appimage.sh    # -> dist/Fallow-0.14.2-x86_64.AppImage
+bash tarball/build-tarball.sh      # -> dist/Fallow-0.14.3-x86_64.tar.gz
+bash appimage/build-appimage.sh    # -> dist/Fallow-0.14.3-x86_64.AppImage
 bash flatpak/build-flatpak.sh      # -> build/flatpak/org.fallow.PdfReader.flatpak
 ```
 

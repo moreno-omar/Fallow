@@ -16,6 +16,13 @@ base: io.qt.PySide.BaseApp
 base-version: '6.11'
 command: fallow
 
+# Keep the app's locales inside the app instead of splitting them into the
+# runtime locale tree. The split step renames directories inside the build tree,
+# which fails with EXDEV when the tree is on an overlay or a second filesystem
+# (containers, some CI workspaces). The app's own locale payload is small, so
+# keeping it costs little and makes the build independent of the filesystem.
+separate-locales: false
+
 finish-args:
   # Qt needs the shared-memory segment when it renders through X11.
   - --share=ipc

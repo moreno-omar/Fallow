@@ -7,7 +7,7 @@
 #
 # Produces dist/Fallow-<version>-<arch>.tar.gz. Unpacked it looks like:
 #
-#   Fallow-0.14.2-x86_64/
+#   Fallow-0.14.3-x86_64/
 #   ├── fallow -> AppRun            launcher, runs in place
 #   ├── install.sh                  installs into ~/.local (or --prefix)
 #   ├── uninstall.sh                removes that install, keeps your data
@@ -31,7 +31,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../packaging/stage-payload.sh"
 
 # Matches appimage/build-appimage.sh: the release workflow passes the git tag.
-VERSION="${FALLOW_VERSION:-0.14.2}"
+VERSION="${FALLOW_VERSION:-0.14.3}"
 
 BUNDLE="Fallow-${VERSION}-${ARCH}"
 BUILD_DIR="${FALLOW_ROOT}/build/tarball"

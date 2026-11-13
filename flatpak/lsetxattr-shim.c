@@ -35,9 +35,11 @@
 #include <sys/xattr.h>
 
 typedef int (*xattr_fn)(const char *, const char *, const void *, size_t, int);
+typedef int (*fxattr_fn)(int, const char *, const void *, size_t, int);
 
 static xattr_fn real_setxattr = NULL;
 static xattr_fn real_lsetxattr = NULL;
+static fxattr_fn real_fsetxattr = NULL;
 
 /* The one label an unprivileged process may not set; ignore that failure only. */
 static int keep_selinux_label(const char *name, int result)
@@ -52,6 +54,16 @@ int setxattr(const char *path, const char *name, const void *value, size_t size,
     if (real_setxattr == NULL)
         real_setxattr = (xattr_fn)dlsym(RTLD_NEXT, "setxattr");
     return keep_selinux_label(name, real_setxattr(path, name, value, size, flags));
+}
+
+/* libostree labels an already-open file through the descriptor, which is the
+ * path that fails on filesystems without SELinux support (containers, overlay
+ * workspaces) and on the flatpak regression itself. */
+int fsetxattr(int fd, const char *name, const void *value, size_t size, int flags)
+{
+    if (real_fsetxattr == NULL)
+        real_fsetxattr = (fxattr_fn)dlsym(RTLD_NEXT, "fsetxattr");
+    return keep_selinux_label(name, real_fsetxattr(fd, name, value, size, flags));
 }
 
 int lsetxattr(const char *path, const char *name, const void *value, size_t size, int flags)

@@ -6,7 +6,7 @@ AppImage and the tarball are packed from the same staged payload.
 
 | | Flatpak | AppImage | Portable tarball |
 |---|---|---|---|
-| Artifact | `build/flatpak/org.fallow.PdfReader.flatpak` (86 MB) | `dist/Fallow-0.14.2-x86_64.AppImage` (135 MB) | `dist/Fallow-0.14.2-x86_64.tar.gz` (149 MB) |
+| Artifact | `build/flatpak/org.fallow.PdfReader.flatpak` (86 MB) | `dist/Fallow-0.14.3-x86_64.AppImage` (135 MB) | `dist/Fallow-0.14.3-x86_64.tar.gz` (149 MB) |
 | Install | `flatpak install --user <file>` | `chmod +x` and run | unpack, then `./install.sh` (or run in place) |
 | Sandboxed | yes | no | no |
 | What it needs at runtime | `org.kde.Platform//6.11` + `io.qt.PySide.BaseApp//6.11` (its manifest pulls them in) | glibc and the X11/Wayland client libraries | the same as the AppImage |
@@ -40,9 +40,10 @@ sudo chmod +x /usr/local/bin/appimagetool
 For the Flatpak, distro matters more than it should. Fedora's stack works as
 shipped; **Ubuntu 24.04's does not**: its AppStream 1.0.2 fails
 `flatpak-builder`'s compose step with `file-read-error` (see *Troubleshooting*),
-and its image has no `eu-strip`. That is why the Flatpak job is non-blocking in
-CI for now: a release ships the AppImage and the tarball while the Flatpak's
-build environment is repaired, and the release body lists only what was built.
+and its image has no `eu-strip`. CI therefore builds the Flatpak inside a
+`fedora:44` container on the runner (Docker supplies the namespaces Flatpak
+needs), which is also why the job installs `gcc`: the build script compiles the
+xattr shim there.
 
 ---
 
@@ -72,8 +73,21 @@ rm -rf ~/.var/app/org.fallow.PdfReader          # its session file and library
 2. **Checks for the flatpak/ostree xattr regression** (see *Troubleshooting*).
 3. **Runs `flatpak-builder`**, which downloads the PyMuPDF wheel, unpacks the
    BaseApp, copies `app/` and the desktop/metainfo/icon files into `/app/`, and
-   exports the result into a local OSTree repository.
+   exports the result into a local OSTree repository. The build passes
+   `--disable-rofiles-fuse` (the FUSE cache is only a speed-up, and containers
+   often cannot mount it) and preloads the xattr shim when the regression above
+   is present.
 4. **Bundles the repository** into one installable `.flatpak` file.
+
+### Why `separate-locales: false`
+
+`flatpak-builder` normally moves the app's locales into the runtime's locale
+tree, and that migration renames directories inside the build tree. On an
+overlay or a second filesystem - containers, some CI workspaces - the rename
+fails with `EXDEV`, and the build dies after it has already compiled everything.
+Keeping the locales inside the app costs a couple of megabytes (the reader has
+no translations of its own; the payload is Qt's) and makes the build independent
+of the filesystem it runs on.
 
 ### Why there is a BaseApp
 
@@ -141,7 +155,7 @@ Three flags matter and each one has a reason:
 
 ```bash
 bash appimage/build-appimage.sh
-./dist/Fallow-0.14.2-x86_64.AppImage                          # or: ... /path/to/document.pdf
+./dist/Fallow-0.14.3-x86_64.AppImage                          # or: ... /path/to/document.pdf
 ```
 
 ### What the script does
@@ -220,8 +234,8 @@ the metainfo only points at its published copy.
 
 ```bash
 bash tarball/build-tarball.sh
-tar -xzf dist/Fallow-0.14.2-x86_64.tar.gz
-cd Fallow-0.14.2-x86_64
+tar -xzf dist/Fallow-0.14.3-x86_64.tar.gz
+cd Fallow-0.14.3-x86_64
 ./install.sh              # or: ./fallow /path/to/document.pdf, with no install
 ```
 
@@ -362,7 +376,7 @@ reason.
 container has no SVG loader, so the scalable icon fails to parse; install
 `librsvg2-common` (or export from a machine that has it).
 
-### `error: lsetxattr(security.selinux): Operation not supported`
+### `error: lsetxattr(security.selinux)` / `fsetxattr(security.selinux): Operation not supported`
 
 This is [flatpak#6818](https://github.com/flatpak/flatpak/issues/6818): a
 regression introduced after 1.17.6, fixed in flatpak 1.18.3 and the matching
@@ -521,20 +535,18 @@ produced on a clean machine rather than on whatever is in a working copy.
 # 1. The release notes read the metainfo's <release> entry, so write it first.
 #    Also bump VERSION in appimage/build-appimage.sh and tarball/build-tarball.sh.
 # 2. Commit, then tag and push.
-git tag v0.14.2
-git push origin v0.14.2
+git tag v0.14.3
+git push origin v0.14.3
 ```
 
 The tag's version drives everything from there:
 
 - the bundle job passes it to `build-appimage.sh` as `FALLOW_VERSION`, so the
-  image is named `Fallow-0.14.2-x86_64.AppImage`;
+  image is named `Fallow-0.14.3-x86_64.AppImage`;
 - the same job passes it to `build-tarball.sh --payload`, which packs the AppDir
-  it just staged into `Fallow-0.14.2-x86_64.tar.gz`;
-- the Flatpak job builds and smoke-tests the Flatpak and copies the fixed-name
-  bundle to `Fallow-0.14.2-x86_64.flatpak`. It is non-blocking while Ubuntu
-  24.04's AppStream cannot compose the metadata; when it succeeds the release
-  carries the third package;
+  it just staged into `Fallow-0.14.3-x86_64.tar.gz`;
+- the Flatpak job builds and smoke-tests inside a `fedora:44` container, then
+  copies the fixed-name bundle to `Fallow-0.14.3-x86_64.flatpak`;
 - the release job writes `SHA256SUMS`, creates or updates the GitHub Release for
   the tag, and attaches all four files.
 

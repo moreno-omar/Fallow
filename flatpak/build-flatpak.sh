@@ -43,7 +43,9 @@ host_has_xattr_regression() {
         org.kde.Platform \
         "${RUNTIME_VERSION}" 2>&1 || true)"
     rm -rf "${probe}"
-    grep -q "lsetxattr(security.selinux)" <<<"${output}"
+    # libostree reports the same failure through either call, depending on how
+    # the file is opened: lsetxattr(path) or fsetxattr(fd).
+    grep -q "setxattr(security.selinux)" <<<"${output}"
 }
 
 # Compiles flatpak/lsetxattr-shim.c and echoes the path of the shared object.
@@ -76,6 +78,7 @@ echo "==> 3/4  Building the application into ${BUILD_DIR}"
 LD_PRELOAD="${PRELOAD}" flatpak-builder \
     --user \
     --force-clean \
+    --disable-rofiles-fuse \
     --default-branch="${BRANCH}" \
     --repo="${BUILD_DIR}/repo" \
     "${BUILD_DIR}/build-dir" \

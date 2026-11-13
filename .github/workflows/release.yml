@@ -3,8 +3,8 @@ name: Release
 # Builds the three downloadable packages described in flatpak_appimage_build.md
 # and attaches them to a GitHub Release:
 #
-#   git tag v0.14.2
-#   git push origin v0.14.2
+#   git tag v0.14.3
+#   git push origin v0.14.3
 #
 # The tag's version (without the leading "v") names the AppImage and the
 # tarball, so the artifacts always match the release they ship with. The same
@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag to build and publish, e.g. v0.14.2"
+        description: "Version tag to build and publish, e.g. v0.14.3"
         required: true
         type: string
 
@@ -141,36 +141,44 @@ jobs:
             dist/*.tar.gz
           if-no-files-found: error
 
-  # Known broken, deliberately non-blocking. Ubuntu 24.04's AppStream 1.0.2
-  # fails flatpak-builder's compose step with "file-read-error" for every app
-  # (the same invocation succeeds on AppStream 1.1), and the image has no
-  # eu-strip. A failed Flatpak build must not stop the AppImage and the tarball
-  # - the two packages this pipeline exists to ship - from being published.
-  # Once the job runs where its metadata can be composed, drop
-  # continue-on-error and the release gets the third package back.
+  # Ubuntu 24.04 cannot build this manifest: its AppStream 1.0.2 fails
+  # flatpak-builder's metadata compose step with "file-read-error" for any
+  # application (the same invocation succeeds on AppStream 1.1), and the image
+  # has no eu-strip. So the build runs in Fedora - the distribution the manifest
+  # is written and tested on - with Docker supplying the namespaces Flatpak
+  # needs, and the smoke test runs there too, against the runtime the build just
+  # installed.
   flatpak:
     name: Flatpak
     needs: prepare
     runs-on: ubuntu-24.04
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install flatpak, flatpak-builder, and eu-strip
+      # gcc is required: the build script compiles the xattr shim when flatpak's
+      # SELinux labelling fails, which it does on a filesystem without SELinux.
+      - name: Build and smoke-test the Flatpak inside Fedora
         run: |
-          sudo apt-get update
-          # eu-strip (elfutils) is what flatpak-builder strips binaries with;
-          # the Ubuntu images ship flatpak-builder without it.
-          sudo apt-get install -y --no-install-recommends \
-            flatpak flatpak-builder elfutils
-
-      - name: Add the Flathub remote
-        run: |
-          flatpak remote-add --user --if-not-exists flathub \
-            https://dl.flathub.org/repo/flathub.flatpakrepo
-
-      - name: Build the Flatpak
-        run: bash flatpak/build-flatpak.sh
+          docker run --privileged --rm --interactive \
+            --volume "${PWD}:/repo" --workdir /repo \
+            fedora:44 bash -s <<'INNER'
+          set -euo pipefail
+          dnf install -y --setopt=install_weak_deps=False flatpak flatpak-builder gcc
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          # Build in the container's own filesystem. flatpak-builder renames
+          # directories inside the build tree, and a bind mount from the host can
+          # be a separate filesystem, where that rename fails with EXDEV.
+          mkdir -p /work
+          tar -C /repo --exclude=./build --exclude=./dist --exclude=./.git -cf - . | tar -C /work -xf -
+          cd /work
+          bash flatpak/build-flatpak.sh
+          flatpak install --user -y --noninteractive build/flatpak/org.fallow.PdfReader.flatpak
+          flatpak run --command=python3 --env=PYTHONPATH=/app/lib/fallow \
+            --env=QT_QPA_PLATFORM=offscreen org.fallow.PdfReader -P -c \
+            "import PySide6, pymupdf, numpy; print('bundled interpreters ok')"
+          mkdir -p /repo/build/flatpak
+          cp build/flatpak/org.fallow.PdfReader.flatpak /repo/build/flatpak/
+          INNER
 
       # The bundle name is fixed inside the build script; releases carry the
       # version so two downloads cannot be confused for one another.
@@ -179,15 +187,6 @@ jobs:
           mkdir -p dist
           cp build/flatpak/org.fallow.PdfReader.flatpak \
              "dist/Fallow-${{ needs.prepare.outputs.version }}-x86_64.flatpak"
-
-      - name: Smoke-test the Flatpak
-        run: |
-          flatpak install --user -y --noninteractive \
-            build/flatpak/org.fallow.PdfReader.flatpak
-          flatpak run --command=python3 --env=PYTHONPATH=/app/lib/fallow \
-            --env=QT_QPA_PLATFORM=offscreen \
-            org.fallow.PdfReader -P -c \
-            "import PySide6, pymupdf, numpy; print('bundled interpreters ok')"
 
       - uses: actions/upload-artifact@v4
         with:
