@@ -469,3 +469,83 @@ $ shellcheck -x <six scripts>                -> clean
   intended path.
 - The `v0.14.0` release remains empty, and its tag now points at a commit that
   predates every packaging change.
+
+---
+
+## 18:28 — v0.14.3 published: all three packages, Flatpak included
+
+**Objective.** Publish a release that carries the Flatpak alongside the AppImage
+and the portable tarball.
+
+**Solution.** Tagged `v0.14.3` at `395cbb7`. Run 43336456497: all four jobs green
+(`Resolve the version`, `Flatpak`, `AppImage and portable tarball`,
+`Publish the release`). The release carries
+`Fallow-0.14.3-x86_64.AppImage` (141 MB),
+`Fallow-0.14.3-x86_64.tar.gz` (156 MB),
+`Fallow-0.14.3-x86_64.flatpak` (90 MB) and `SHA256SUMS`; the generated body
+lists all three packages, including the Flatpak section that was absent from
+0.14.2.
+
+The stray `v0.14.1` tag is gone. `v0.14.0` keeps its tag: its release exists but
+is empty, and only an authenticated API call (or the web UI) can delete the
+release - deleting the tag alone would leave it pointing at nothing.
+
+**Actions Performed.**
+
+1. Deleted `v0.14.1` remotely and locally after confirming
+   `releases/tags/v0.14.1` returned 404.
+2. Pushed `main` and `development`, tagged and pushed `v0.14.3`.
+3. Polled the run until completion and read the job results.
+4. Downloaded all four assets, verified the checksums, imported the Flatpak into
+   a throwaway `FLATPAK_USER_DIR`, ran its bundled interpreter, installed and
+   launched the tarball.
+
+**Verification Output.**
+
+```
+$ sha256sum -c SHA256SUMS
+Fallow-0.14.3-x86_64.AppImage: OK
+Fallow-0.14.3-x86_64.tar.gz: OK
+Fallow-0.14.3-x86_64.flatpak: OK
+
+$ FLATPAK_USER_DIR=... flatpak install --user -y Fallow-0.14.3-x86_64.flatpak
+Installing app/org.fallow.PdfReader/x86_64/stable
+$ flatpak info --user org.fallow.PdfReader
+ID: org.fallow.PdfReader ... Version: 0.14.3
+$ flatpak run --command=python3 --env=PYTHONPATH=/app/lib/fallow \
+      --env=QT_QPA_PLATFORM=offscreen org.fallow.PdfReader -P -c \
+      "import PySide6, pymupdf, numpy"
+flatpak bundled interpreters ok            # exit=0
+
+$ ./Fallow-0.14.3-x86_64/install.sh --prefix /tmp/.../prefix
+installed
+$ QT_QPA_PLATFORM=offscreen timeout 8 /tmp/.../prefix/bin/fallow
+launch exit=124                            # stayed up
+tarball interpreters ok
+```
+
+**References Used.**
+
+1. flatpak-builder command reference (`--disable-rofiles-fuse`, build flags):
+   <https://docs.flatpak.org/en/latest/flatpak-builder-command-reference.html>
+2. flatpak#6818, the `security.selinux` regression the shim covers:
+   <https://github.com/flatpak/flatpak/issues/6818>
+3. Flatpak manifest reference (`separate-locales`):
+   <https://docs.flatpak.org/en/latest/manifests.html>
+
+**Optional steps.**
+
+- Delete the empty `v0.14.0` release, then its tag.
+- Pin `fedora:44` by digest in the workflow, and cache the KDE runtime between
+  runs, which is most of the Flatpak job's runtime.
+- Sign `SHA256SUMS` so the verification file itself can be trusted.
+
+**Possible problems.**
+
+- The Flatpak job downloads the Fedora image and several GB of runtimes on every
+  tag; a release now takes roughly six minutes.
+- The build depends on `gcc` in the container for the xattr shim; if the
+  container image stops shipping a compiler, the job fails at step 2.
+- `v0.14.0`'s empty release is still visible on the releases page.
+- The release body is generated from globs; renaming an asset means editing both
+  the workflow and the globs in `release.yml` together.
